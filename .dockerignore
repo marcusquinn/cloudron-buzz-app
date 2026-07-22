@@ -1,0 +1,17 @@
+.git
+.github
+.aidevops.json
+.aidevops
+.agents
+.beads
+.claude
+.windsurf
+docs
+test
+todo
+.DS_Store
+AGENTS.md
+CLAUDE.md
+DESIGN.md
+MODELS.md
+TODO.md

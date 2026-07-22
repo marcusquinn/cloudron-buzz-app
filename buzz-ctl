@@ -1,0 +1,217 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Marcus Quinn
+
+set -euo pipefail
+
+readonly OWNER_FILE="/app/data/config/owner-public-key"
+readonly RELAY_PUBLIC_KEY_FILE="/app/data/config/relay-public-key"
+readonly RELAY_PRIVATE_KEY_FILE="/app/data/config/relay-private-key"
+readonly SUPERVISOR_CONFIG="/app/code/supervisord.conf"
+
+fail() {
+	local message="$1"
+	printf "ERROR: %s\n" "$message" >&2
+	return 1
+}
+
+read_value() {
+	local file_path="$1"
+	local label="$2"
+	local value=""
+	if [[ -L "$file_path" || ! -s "$file_path" ]]; then
+		fail "${label} file is unavailable" || return 1
+	fi
+	value=$(<"$file_path")
+	printf "%s" "$value"
+	return 0
+}
+
+load_admin_environment() {
+	local relay_private_key=""
+
+	case "${CLOUDRON_POSTGRESQL_URL:-}" in
+	postgres://* | postgresql://*) ;;
+	*) fail "CLOUDRON_POSTGRESQL_URL is missing or invalid" || return 1 ;;
+	esac
+	case "${CLOUDRON_REDIS_URL:-}" in
+	redis://* | rediss://*) ;;
+	*) fail "CLOUDRON_REDIS_URL is missing or invalid" || return 1 ;;
+	esac
+	if [[ -z "${CLOUDRON_APP_DOMAIN:-}" ]]; then
+		fail "CLOUDRON_APP_DOMAIN is not set" || return 1
+	fi
+	relay_private_key=$(read_value "$RELAY_PRIVATE_KEY_FILE" "relay private key") || return 1
+	export DATABASE_URL="${CLOUDRON_POSTGRESQL_URL}"
+	export REDIS_URL="${CLOUDRON_REDIS_URL}"
+	export RELAY_URL="wss://${CLOUDRON_APP_DOMAIN}"
+	export BUZZ_RELAY_PRIVATE_KEY="$relay_private_key"
+	return 0
+}
+
+write_owner() {
+	local owner_pubkey="$1"
+	local temporary_file=""
+
+	if [[ ! "$owner_pubkey" =~ ^[0-9a-f]{64}$ ]]; then
+		fail "Normalized owner key is invalid" || return 1
+	fi
+	if [[ -L "$OWNER_FILE" ]]; then
+		fail "Refusing symlinked owner file" || return 1
+	fi
+	temporary_file=$(mktemp "${OWNER_FILE}.tmp.XXXXXX") || return 1
+	chmod 0600 "$temporary_file"
+	printf "%s\n" "$owner_pubkey" >"$temporary_file"
+	chown cloudron:cloudron "$temporary_file"
+	mv -f "$temporary_file" "$OWNER_FILE"
+	return 0
+}
+
+wait_for_relay() {
+	local attempt=0
+	local max_attempts=90
+
+	while ((attempt < max_attempts)); do
+		if curl --fail --silent --show-error http://127.0.0.1:3000/_readiness >/dev/null 2>&1; then
+			return 0
+		fi
+		((attempt += 1))
+		sleep 1
+	done
+	fail "Buzz did not become ready within ${max_attempts} seconds" || return 1
+}
+
+add_member() {
+	local member_pubkey="$1"
+	local member_role="${2:-member}"
+
+	if [[ "$member_role" != "member" && "$member_role" != "admin" ]]; then
+		fail "Role must be member or admin" || return 1
+	fi
+	load_admin_environment || return 1
+	/app/code/bin/buzz-admin add-member --pubkey "$member_pubkey" --role "$member_role"
+	return 0
+}
+
+remove_member() {
+	local member_pubkey="$1"
+	local member_role="${2:-}"
+
+	load_admin_environment || return 1
+	if [[ -n "$member_role" ]]; then
+		if [[ "$member_role" != "member" && "$member_role" != "admin" ]]; then
+			fail "Role must be member or admin" || return 1
+		fi
+		/app/code/bin/buzz-admin remove-member --pubkey "$member_pubkey" --role "$member_role"
+	else
+		/app/code/bin/buzz-admin remove-member --pubkey "$member_pubkey"
+	fi
+	return 0
+}
+
+set_owner() {
+	local requested_pubkey="$1"
+	local output=""
+	local normalized_pubkey=""
+	local previous_owner=""
+	local relay_public_key=""
+
+	load_admin_environment || return 1
+	previous_owner=$(read_value "$OWNER_FILE" "owner public key") || return 1
+	relay_public_key=$(read_value "$RELAY_PUBLIC_KEY_FILE" "relay public key") || return 1
+
+	if ! output=$(/app/code/bin/buzz-admin add-member --pubkey "$requested_pubkey" --role admin 2>&1); then
+		printf "%s\n" "$output" >&2
+		return 1
+	fi
+	printf "%s\n" "$output"
+	if [[ "$output" =~ (added|already[[:space:]]a[[:space:]]member:)[[:space:]]+([0-9a-f]{64}) ]]; then
+		normalized_pubkey="${BASH_REMATCH[2]}"
+	else
+		fail "Could not normalize the requested owner public key" || return 1
+	fi
+
+	write_owner "$normalized_pubkey" || return 1
+	/usr/bin/supervisorctl --configuration "$SUPERVISOR_CONFIG" restart buzz-relay
+	wait_for_relay || return 1
+
+	if [[ "$previous_owner" == "$relay_public_key" && "$normalized_pubkey" != "$relay_public_key" ]]; then
+		if ! /app/code/bin/buzz-admin remove-member --pubkey "$relay_public_key" --role admin; then
+			printf "WARNING: Human owner is active, but the bootstrap relay identity could not be removed from membership.\n" >&2
+		fi
+	fi
+	printf "Owner is now %s\n" "$normalized_pubkey"
+	return 0
+}
+
+show_owner() {
+	local owner_pubkey=""
+	local relay_pubkey=""
+	owner_pubkey=$(read_value "$OWNER_FILE" "owner public key") || return 1
+	relay_pubkey=$(read_value "$RELAY_PUBLIC_KEY_FILE" "relay public key") || return 1
+	printf "Owner public key: %s\n" "$owner_pubkey"
+	printf "Relay public key: %s\n" "$relay_pubkey"
+	return 0
+}
+
+list_members() {
+	load_admin_environment || return 1
+	/app/code/bin/buzz-admin list-members
+	return 0
+}
+
+status() {
+	/usr/bin/supervisorctl --configuration "$SUPERVISOR_CONFIG" status
+	printf "\nRelay readiness:\n"
+	curl --fail --silent --show-error http://127.0.0.1:3000/_readiness
+	printf "\n\nMinIO readiness:\n"
+	curl --fail --silent --show-error http://127.0.0.1:9000/minio/health/ready
+	printf "\n"
+	return 0
+}
+
+usage() {
+	printf "%s\n" \
+		"Usage: buzz-ctl <command> [arguments]" \
+		"" \
+		"Commands:" \
+		"  owner                                  Show owner and relay public keys" \
+		"  set-owner <npub-or-hex>                 Set and activate the human owner" \
+		"  add-member <npub-or-hex> [member|admin] Add a relay member" \
+		"  remove-member <npub-or-hex> [role]      Remove a non-owner member" \
+		"  list-members                            List relay members" \
+		"  status                                  Show process and dependency health"
+	return 0
+}
+
+main() {
+	local command_name="${1:-help}"
+	local first_argument="${2:-}"
+	local second_argument="${3:-}"
+
+	case "$command_name" in
+	owner) show_owner || return 1 ;;
+	set-owner)
+		[[ -n "$first_argument" ]] || { fail "set-owner requires an npub or hexadecimal public key" || return 1; }
+		set_owner "$first_argument" || return 1
+		;;
+	add-member)
+		[[ -n "$first_argument" ]] || { fail "add-member requires an npub or hexadecimal public key" || return 1; }
+		add_member "$first_argument" "${second_argument:-member}" || return 1
+		;;
+	remove-member)
+		[[ -n "$first_argument" ]] || { fail "remove-member requires an npub or hexadecimal public key" || return 1; }
+		remove_member "$first_argument" "$second_argument" || return 1
+		;;
+	list-members) list_members || return 1 ;;
+	status) status || return 1 ;;
+	help | --help | -h) usage || return 1 ;;
+	*)
+		usage
+		fail "Unknown command: ${command_name}" || return 1
+		;;
+	esac
+	return 0
+}
+
+main "$@"

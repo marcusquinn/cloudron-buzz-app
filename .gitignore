@@ -1,0 +1,11 @@
+.DS_Store
+.aidevops.json
+.aidevops/
+.agents/commands
+.agents/loop-state/
+.agents/memory/
+.agents/tmp/
+.beads/
+.claude/
+.windsurf/
+CLAUDE.md

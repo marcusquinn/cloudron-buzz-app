@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="96" role="img" aria-label="languages by lines of code">
+  <title>languages by lines of code</title>
+  <rect width="520" height="96" fill="#ffffff"/>
+  <rect x="20" y="10" width="480" height="14" rx="3" fill="#eaecef"/>
+  <rect x="20" y="10" width="283" height="14" fill="#083fa1"/>
+  <rect x="303" y="10" width="162" height="14" fill="#89e051"/>
+  <rect x="465" y="10" width="14" height="14" fill="#292929"/>
+  <rect x="479" y="10" width="12" height="14" fill="#384d54"/>
+  <rect x="491" y="10" width="9" height="14" fill="#cb171e"/>
+  <rect x="20" y="34" width="10" height="10" rx="2" fill="#083fa1"/>
+  <text x="34" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" fill="#24292f">Markdown <tspan fill="#57606a">59.1%</tspan></text>
+  <rect x="270" y="34" width="10" height="10" rx="2" fill="#89e051"/>
+  <text x="284" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" fill="#24292f">Shell <tspan fill="#57606a">33.8%</tspan></text>
+  <rect x="20" y="50" width="10" height="10" rx="2" fill="#292929"/>
+  <text x="34" y="60" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" fill="#24292f">JSON <tspan fill="#57606a">3.0%</tspan></text>
+  <rect x="270" y="50" width="10" height="10" rx="2" fill="#384d54"/>
+  <text x="284" y="60" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" fill="#24292f">Dockerfile <tspan fill="#57606a">2.5%</tspan></text>
+  <rect x="20" y="66" width="10" height="10" rx="2" fill="#cb171e"/>
+  <text x="34" y="76" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" fill="#24292f">YAML <tspan fill="#57606a">1.6%</tspan></text>
+</svg>
