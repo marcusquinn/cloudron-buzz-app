@@ -77,6 +77,8 @@ Format: `- [ ] tNNN Description @owner #tag ~estimate risk:level logged:date`
 
 - [ ] t012 Restore Cloudron 9.2 compatibility ref:GH#17
 
+- [ ] t013 Publish Buzz 0.1.4 Cloudron catalog ref:GH#19
+
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
