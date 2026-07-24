@@ -1,6 +1,6 @@
 # Cloudron community publishing
 
-`CloudronVersions.json` is initialized but intentionally contains no release.
+`CloudronVersions.json` contains the independently published package history.
 Publishing requires a registry-hosted image built by the Cloudron CLI and
 separate operator authorization. Never hand-write an image tag or digest into
 the catalog.
@@ -29,6 +29,14 @@ the catalog.
 Published entries are append-only. For a critical bad release, run
 `cloudron versions revoke`, bump the package version, rebuild, and add a new
 entry. Do not mutate the manifest or image of a published version.
+
+Cloudron validates the complete catalog before selecting a compatible version.
+Every historical manifest must therefore remain parseable by the oldest
+supported Cloudron release. Do not add fields introduced by a newer Cloudron
+to any catalog entry while older releases remain supported. The append-only
+rule has one narrow exception: incompatible catalog metadata may be corrected
+only when it otherwise makes the complete catalog unusable. Published images
+and runtime package contents remain immutable.
 
 ## Visual assets
 

@@ -53,6 +53,9 @@ main() {
 	jq --exit-status '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
 		fail "CloudronVersions.json does not match the catalog contract" || return 1
 	}
+	jq --exit-status '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
+		fail "Historical catalog entries must remain parseable by Cloudron 9.1 and 9.2" || return 1
+	}
 	assert_contains CHANGELOG '[0.1.4]' || return 1
 	assert_contains CHANGELOG.md '[0.1.4]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --version=<VERSION> --state=published' || return 1
