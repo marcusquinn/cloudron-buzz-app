@@ -42,14 +42,19 @@ main() {
 	local required_file=""
 	local shell_script=""
 
-	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-relay.sh buzz-ctl supervisord.conf README.md SECURITY.md CHANGELOG.md LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png .agents/AGENTS.md .github/workflows/cloudron-package-release.yml; do
+	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-relay.sh buzz-ctl supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png .agents/AGENTS.md .github/workflows/cloudron-package-release.yml; do
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.1\" and .upstreamVersion == \"0.4.22\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.2\" and .upstreamVersion == \"0.4.22\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl != \"\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
+	jq --exit-status '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
+		fail "CloudronVersions.json does not match the catalog contract" || return 1
+	}
+	assert_contains CHANGELOG '[0.1.2]' || return 1
+	pass "Cloudron community publishing baseline"
 	assert_contains CloudronManifest.json "Join a community" || return 1
 	assert_contains CloudronManifest.json "hosted Builderlab workflow" || return 1
 	assert_contains README.md "blanket HTTP Basic Auth" || return 1

@@ -97,7 +97,15 @@ Responsive behavior belongs to upstream Buzz desktop, mobile, and web clients.
 The package must preserve WebSocket, media, and static-asset delivery without
 changing client layout behavior.
 
-## 10. Agent Prompt Guide
+## 10. Publishing Assets
+
+The package icon remains the upstream Buzz mark. `media/hero.png` is a
+1568×523 crop of the privacy-reviewed general-channel screenshot and preserves
+the unmodified upstream interface. Re-run the screenshot privacy review before
+replacing it; no private channels, messages, keys, local paths, or account data
+may appear in Community Apps media.
+
+## 11. Agent Prompt Guide
 
 When changing packaging, treat the upstream interface as immutable. UI changes
 belong upstream unless this repository explicitly adopts a separate management
