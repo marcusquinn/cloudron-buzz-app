@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-07-24
+
+### Changed
+
+- Upgrade the pinned Buzz relay and web assets from `v0.4.22` to `v0.4.24`,
+  including upstream Redis pool sizing and media, channel, and reconnect fixes.
+
 ## [0.1.2] - 2026-07-24
 
 ### Added
