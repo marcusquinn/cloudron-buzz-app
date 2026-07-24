@@ -12,7 +12,7 @@
   "website": "https://buzz.xyz",
   "contactEmail": "marcus@marcusquinn.com",
   "documentationUrl": "https://github.com/block/buzz",
-  "minBoxVersion": "9.1.0",
+  "minBoxVersion": "10.0.0",
   "memoryLimit": 1073741824,
   "addons": {
     "localstorage": {},
@@ -33,6 +33,7 @@
   "iconUrl": "https://raw.githubusercontent.com/marcusquinn/cloudron-buzz-app/main/icon.png",
   "packagerName": "Marcus Quinn",
   "packagerUrl": "https://github.com/marcusquinn",
+  "packageUrl": "https://github.com/marcusquinn/cloudron-buzz-app",
   "mediaLinks": [
     "https://raw.githubusercontent.com/marcusquinn/cloudron-buzz-app/main/docs/screenshots/buzz-desktop-general-channel-overview.png"
   ]

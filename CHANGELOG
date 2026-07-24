@@ -1,2 +1,3 @@
 [0.1.3]
 * Upgrade Buzz to v0.4.24 with upstream reliability and media fixes.
+* Link the package repository and require Cloudron 10.0.0.
