@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.1.2] - 2026-07-24
+
+### Added
+
+- Cloudron community catalog metadata, publishing runbook, and
+  privacy-reviewed 3:1 screenshot hero.
+
+### Changed
+
+- Require Cloudron `9.1.0` for community-package publishing metadata.
+
 ## [0.1.1] - 2026-07-22
 
 ### Added in 0.1.1
