@@ -20,7 +20,7 @@ the catalog.
    `cloudron install --versions-url <PUBLIC_VERSIONS_URL> --location buzz-test`.
    Also verify upgrade, restart, health checks, and backup/restore.
 6. Promote only the tested package with
-   `cloudron versions update --version <VERSION> --state published`, then
+   `cloudron versions update --version=<VERSION> --state=published`, then
    publish the updated catalog.
 7. Optionally sign in to [Cloudron Community Apps](https://ca.cloudron.io), add
    the same versions URL, and verify the imported icon, screenshot/hero,
