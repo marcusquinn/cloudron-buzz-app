@@ -7,9 +7,9 @@ upstream container images.
 
 - Project: Buzz by Block, Inc.
 - Source: <https://github.com/block/buzz>
-- Release: `v0.4.22`
-- Commit: `e9188c03f6c2460983a3dac0fa7702b468838e62`
-- Image: `ghcr.io/block/buzz:sha-e9188c0@sha256:3b16f91ab715a6f3a44be92b97ae59e9a2e8149d4604f2aebbbec92fcf3e3a22`
+- Release: `v0.4.24`
+- Commit: `710ed9fff57878a1d69f809b80a6ee0416c53fc4`
+- Image: `ghcr.io/block/buzz:sha-710ed9f@sha256:398f0497a88e3811339a23cf1081771dbd7a27a892ed12905c485d3c48a3bc19`
 - License: Apache License 2.0; see `LICENSES/Apache-2.0.txt`.
 
 The Buzz name and related marks belong to their respective owners. This

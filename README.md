@@ -41,7 +41,7 @@ The upstream source is available in the
 This package deploys one private Buzz relay with:
 
 - Buzz relay, administration CLI, invite surface, and early Git forge from
-  upstream `v0.4.22`.
+  upstream `v0.4.24`.
 - Cloudron-managed PostgreSQL for authoritative relational and event state.
 - Cloudron-managed Redis for pub/sub, admission control, and replay protection.
 - A private, loopback-only MinIO server for durable media and Git packfiles.
@@ -263,7 +263,7 @@ follows:
    identity. Back up the private `nsec` in secure storage. Never paste it into
    Cloudron or send it to another person.
 2. Choose **Join a community**. Do not choose **Create a community** or
-   **I own the community**: in Buzz `v0.4.22`, those options start the hosted
+   **I own the community**: in Buzz `v0.4.24`, those options start the hosted
    Builderlab workflow rather than connecting to a self-hosted relay.
 3. Enter the Cloudron relay URL, replacing the example hostname with the app
    domain:
@@ -381,9 +381,9 @@ should advertise authentication and restricted writes.
 
 ## Version and provenance pins
 
-- **Buzz**: `v0.4.22`, commit
-  `e9188c03f6c2460983a3dac0fa7702b468838e62`, image digest
-  `sha256:3b16f91ab715a6f3a44be92b97ae59e9a2e8149d4604f2aebbbec92fcf3e3a22`.
+- **Buzz**: `v0.4.24`, commit
+  `710ed9fff57878a1d69f809b80a6ee0416c53fc4`, image digest
+  `sha256:398f0497a88e3811339a23cf1081771dbd7a27a892ed12905c485d3c48a3bc19`.
 - **MinIO**: `RELEASE.2025-09-07T16-13-09Z`, image digest
   `sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2`.
 - **MinIO client**: `RELEASE.2025-08-13T08-35-41Z`, image digest

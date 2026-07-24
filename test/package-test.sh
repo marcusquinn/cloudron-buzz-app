@@ -46,14 +46,14 @@ main() {
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.2\" and .upstreamVersion == \"0.4.22\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl != \"\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.3\" and .upstreamVersion == \"0.4.24\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl != \"\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
 	jq --exit-status '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
 		fail "CloudronVersions.json does not match the catalog contract" || return 1
 	}
-	assert_contains CHANGELOG '[0.1.2]' || return 1
+	assert_contains CHANGELOG '[0.1.3]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.2"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	pass "Cloudron community publishing baseline"
@@ -89,7 +89,8 @@ main() {
 	assert_contains .github/workflows/cloudron-package-release.yml "aidevops_ref: 22a6b4b29087ce2fcf3857596a40ff7b2c436482" || return 1
 	pass "Managed release workflow and private-community onboarding"
 
-	assert_contains Dockerfile "ghcr.io/block/buzz:sha-e9188c0@sha256:3b16f91ab715a6f3a44be92b97ae59e9a2e8149d4604f2aebbbec92fcf3e3a22" || return 1
+	assert_contains Dockerfile "ghcr.io/block/buzz:sha-710ed9f@sha256:398f0497a88e3811339a23cf1081771dbd7a27a892ed12905c485d3c48a3bc19" || return 1
+	assert_contains THIRD_PARTY_NOTICES.md "ghcr.io/block/buzz:sha-710ed9f@sha256:398f0497a88e3811339a23cf1081771dbd7a27a892ed12905c485d3c48a3bc19" || return 1
 	assert_contains Dockerfile "minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2" || return 1
 	assert_contains Dockerfile "minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780" || return 1
 	assert_contains Dockerfile "cloudron/base:5.0.0@sha256:04fd70dbd8ad6149c19de39e35718e024417c3e01dc9c6637eaf4a41ec4e596c" || return 1
