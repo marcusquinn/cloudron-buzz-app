@@ -43,8 +43,8 @@
                 "dockerImage": "marcusquinn/cloudron-buzz-app:0.1.2"
             },
             "creationDate": "Thu, 23 Jul 2026 23:21:17 GMT",
-            "ts": "Thu, 23 Jul 2026 23:21:17 GMT",
-            "publishState": "testing"
+            "ts": "Fri, 24 Jul 2026 00:49:19 GMT",
+            "publishState": "published"
         }
     }
 }
