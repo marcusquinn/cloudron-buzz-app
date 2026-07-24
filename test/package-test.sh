@@ -54,6 +54,7 @@ main() {
 		fail "CloudronVersions.json does not match the catalog contract" || return 1
 	}
 	assert_contains CHANGELOG '[0.1.4]' || return 1
+	assert_contains CHANGELOG.md '[0.1.4]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.3"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	pass "Cloudron community publishing baseline"
