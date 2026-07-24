@@ -73,6 +73,8 @@ Format: `- [ ] tNNN Description @owner #tag ~estimate risk:level logged:date`
 
 - [ ] t008 Prepare Buzz community package publishing ref:GH#7
 
+- [ ] t009 Publish Buzz 0.1.2 Cloudron catalog ref:GH#10
+
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
