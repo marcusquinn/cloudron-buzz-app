@@ -42,7 +42,7 @@ main() {
 	local required_file=""
 	local shell_script=""
 
-	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-relay.sh buzz-ctl supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png .agents/AGENTS.md .github/workflows/cloudron-package-release.yml; do
+	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-relay.sh buzz-ctl supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-package-release.yml; do
 		assert_file "$required_file" || return 1
 	done
 
@@ -95,6 +95,9 @@ main() {
 
 	assert_contains Dockerfile "FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-0096d71@sha256:32a8c6aa8ca3617d767eb5743891f45d956c9cdbe161d244c8702a7645b64a78 AS buzz" || return 1
 	assert_contains THIRD_PARTY_NOTICES.md "ghcr.io/block/buzz:sha-0096d71@sha256:32a8c6aa8ca3617d767eb5743891f45d956c9cdbe161d244c8702a7645b64a78" || return 1
+	assert_contains README.md './test/verify-buzz-image.sh' || return 1
+	assert_contains test/verify-buzz-image.sh "docker buildx imagetools inspect" || return 1
+	assert_contains test/verify-buzz-image.sh 'org.opencontainers.image.revision' || return 1
 	assert_contains Dockerfile "minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2" || return 1
 	assert_contains Dockerfile "minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780" || return 1
 	assert_contains Dockerfile "cloudron/base:5.0.0@sha256:04fd70dbd8ad6149c19de39e35718e024417c3e01dc9c6637eaf4a41ec4e596c" || return 1
@@ -103,7 +106,7 @@ main() {
 	fi
 	pass "Container provenance pins"
 
-	for shell_script in start.sh run-minio.sh run-relay.sh buzz-ctl test/package-test.sh; do
+	for shell_script in start.sh run-minio.sh run-relay.sh buzz-ctl test/package-test.sh test/verify-buzz-image.sh; do
 		bash -n "${ROOT_DIR}/${shell_script}"
 		shellcheck "${ROOT_DIR}/${shell_script}"
 	done
