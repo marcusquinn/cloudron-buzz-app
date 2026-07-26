@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-07-26
+
+### Changed
+
+- Upgrade the pinned Buzz relay and web assets from `v0.4.25` to `v0.4.26`,
+  including upstream community-management and mobile-pairing refinements.
+
 ## [0.1.5] - 2026-07-25
 
 ### Changed
