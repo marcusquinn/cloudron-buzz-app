@@ -384,6 +384,10 @@ should advertise authentication and restricted writes.
 - **Buzz**: `v0.4.26`, commit
   `0096d710ed2e6abab19aaf7cdc14e3ee603d7ec8`, image digest
   `sha256:32a8c6aa8ca3617d767eb5743891f45d956c9cdbe161d244c8702a7645b64a78`.
+  Independent registry inspection confirms its `linux/amd64` child manifest is
+  `sha256:fffed2f1a5a7f14cd44d085dc323e78c26586de0b4832ff78dc518b3eabc7224`
+  and its OCI revision label matches the commit. Re-run the registry and
+  release-tag checks with `./test/verify-buzz-image.sh`.
 - **MinIO**: `RELEASE.2025-09-07T16-13-09Z`, image digest
   `sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2`.
 - **MinIO client**: `RELEASE.2025-08-13T08-35-41Z`, image digest
