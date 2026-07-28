@@ -1,11 +1,34 @@
 # Cloudron community publishing
 
 `CloudronVersions.json` contains the independently published package history.
-Publishing requires a registry-hosted image built by the Cloudron CLI and
-separate operator authorization. Never hand-write an image tag or digest into
-the catalog.
+Never hand-write an image tag or digest into the catalog.
 
-## Release workflow
+Merging a reviewed package-version change to `main` is the repository's
+standing publication authorization. The `Publish Cloudron Catalog` workflow
+then performs the deterministic release mechanics; the upstream monitor itself
+still only opens upgrade work and never publishes directly.
+
+## Automated release workflow
+
+For a manifest version that is not yet in the catalog, the workflow:
+
+1. Re-runs package, ShellCheck, and upstream image-provenance checks.
+2. Builds and pushes a `linux/amd64` package image to GHCR.
+3. Resolves the registry digest and proves the image is anonymously readable.
+4. Runs `scripts/publish-cloudron-catalog.sh`, which uses
+   `cloudron versions add --image=<DIGEST> --state=testing` and then promotes
+   that exact entry with
+   `cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published`.
+5. Re-runs package checks and exact catalog assertions.
+6. Fails if `main` advanced, otherwise atomically pushes the generated catalog
+   commit and matching `v<VERSION>` tag, then creates the GitHub release.
+
+The catalog stores the immutable digest reference, not a mutable image tag.
+Concurrency is serialized and all state changes fail closed. A failed run can
+be retried with the workflow's manual dispatch after resolving the reported
+gate; never bypass a failed provenance, anonymous-pull, or catalog assertion.
+
+## Manual release fallback
 
 1. Finish the package release and update `CloudronManifest.json`, `CHANGELOG`,
    and `CHANGELOG.md` together.
@@ -20,8 +43,8 @@ the catalog.
    `cloudron install --versions-url <PUBLIC_VERSIONS_URL> --location buzz-test`.
    Also verify upgrade, restart, health checks, and backup/restore.
 6. Promote only the tested package with
-   `cloudron versions update --version=<VERSION> --state=published`, then
-   publish the updated catalog.
+   `cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published`,
+   then publish the updated catalog.
 7. Optionally sign in to [Cloudron Community Apps](https://ca.cloudron.io), add
    the same versions URL, and verify the imported icon, screenshot/hero,
    description, changelog, and install URL.

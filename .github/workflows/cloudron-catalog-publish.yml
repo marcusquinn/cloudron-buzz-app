@@ -1,0 +1,174 @@
+name: Publish Cloudron Catalog
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: cloudron-catalog-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: read
+
+jobs:
+  # aidevops:trust-boundary — publication runs only in the canonical repository
+  # after reviewed source reaches main; fork and pull-request contexts cannot run it.
+  publish:
+    if: github.repository == 'marcusquinn/cloudron-buzz-app'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CLOUDRON_CLI_INTEGRITY: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==
+      CLOUDRON_CLI_VERSION: 8.2.6
+      GH_TOKEN: ${{ github.token }}
+      IMAGE_REPOSITORY: ghcr.io/marcusquinn/cloudron-buzz-app
+    steps:
+      - name: Check out the exact main revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Determine whether publication is required
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(jq -er '.version | select(test("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"))' CloudronManifest.json)
+          printf 'version=%s\n' "$version" >>"$GITHUB_OUTPUT"
+          if jq --exit-status --arg version "$version" '.versions | has($version)' CloudronVersions.json >/dev/null; then
+            jq --exit-status --arg version "$version" '
+              .versions[$version].publishState == "published" and
+              (.versions[$version].manifest.dockerImage | test("@sha256:[0-9a-f]{64}$"))
+            ' CloudronVersions.json >/dev/null
+            printf 'publish=false\n' >>"$GITHUB_OUTPUT"
+          else
+            printf 'publish=true\n' >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Authorize the publication source
+        if: steps.release.outputs.publish == 'true'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            printf 'Publication explicitly dispatched by %s\n' "$GITHUB_ACTOR"
+            exit 0
+          fi
+          # aidevops:trust-boundary
+          trusted_prs=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq '
+            [.[] | select(
+              .merged_at != null and
+              .base.ref == "main" and
+              (.author_association == "OWNER" or .author_association == "MEMBER" or .author_association == "COLLABORATOR")
+            )] | length
+          ')
+          if [[ ! "$trusted_prs" =~ ^[1-9][0-9]*$ ]]; then
+            printf 'Publication requires a merged main-branch PR from a trusted collaborator or an explicit workflow dispatch\n' >&2
+            exit 1
+          fi
+
+      - name: Verify package source and upstream provenance
+        if: steps.release.outputs.publish == 'true'
+        run: |
+          ./test/package-test.sh
+          ./test/verify-buzz-image.sh
+
+      - name: Install the pinned Cloudron CLI
+        if: steps.release.outputs.publish == 'true'
+        run: |
+          set -euo pipefail
+          actual_integrity=$(npm view "cloudron@${CLOUDRON_CLI_VERSION}" dist.integrity)
+          if [[ "$actual_integrity" != "$CLOUDRON_CLI_INTEGRITY" ]]; then
+            printf 'Cloudron CLI integrity changed for version %s\n' "$CLOUDRON_CLI_VERSION" >&2
+            exit 1
+          fi
+          npm install --global "cloudron@${CLOUDRON_CLI_VERSION}"
+
+      - name: Authenticate to GHCR
+        if: steps.release.outputs.publish == 'true'
+        env:
+          REGISTRY_TOKEN: ${{ github.token }}
+        run: printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+
+      - name: Build and push the package image
+        if: steps.release.outputs.publish == 'true'
+        id: image
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          image_tag="${IMAGE_REPOSITORY}:${VERSION}"
+          docker build --platform linux/amd64 --tag "$image_tag" .
+          docker push "$image_tag"
+          metadata=$(docker buildx imagetools inspect "$image_tag" --format '{{json .}}')
+          digest=$(jq -er '.manifest.digest | select(test("^sha256:[0-9a-f]{64}$"))' <<<"$metadata")
+          printf 'image_ref=%s@%s\n' "$image_tag" "$digest" >>"$GITHUB_OUTPUT"
+
+      - name: Verify anonymous registry access
+        if: steps.release.outputs.publish == 'true'
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.image_ref }}
+        run: |
+          set -euo pipefail
+          docker logout ghcr.io
+          anonymous_config="${RUNNER_TEMP}/anonymous-docker"
+          mkdir -p "$anonymous_config"
+          DOCKER_CONFIG="$anonymous_config" docker buildx imagetools inspect "$IMAGE_REF" >/dev/null
+
+      - name: Generate and validate the published catalog entry
+        if: steps.release.outputs.publish == 'true'
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.image_ref }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          ./scripts/publish-cloudron-catalog.sh "$IMAGE_REF"
+          ./test/package-test.sh
+          jq --exit-status --arg version "$VERSION" --arg image "$IMAGE_REF" '
+            .versions[$version].publishState == "published" and
+            .versions[$version].manifest.version == $version and
+            .versions[$version].manifest.dockerImage == $image
+          ' CloudronVersions.json >/dev/null
+
+      - name: Atomically publish catalog and package tag
+        if: steps.release.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags
+          remote_main=$(git rev-parse origin/main)
+          if [[ "$remote_main" != "$GITHUB_SHA" ]]; then
+            printf 'main advanced from %s to %s while the release was building\n' "$GITHUB_SHA" "$remote_main" >&2
+            exit 1
+          fi
+          if git rev-parse --quiet --verify "refs/tags/v${VERSION}" >/dev/null; then
+            printf 'tag v%s already exists while the catalog entry is absent\n' "$VERSION" >&2
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add CloudronVersions.json
+          git commit -m "chore(release): publish Buzz catalog ${VERSION}"
+          git tag --annotate "v${VERSION}" --message "Buzz for Cloudron v${VERSION}"
+          # aidevops:trust-boundary — configure push credentials only after all source-derived build and validation steps.
+          gh auth setup-git
+          git push --atomic origin HEAD:main "refs/tags/v${VERSION}"
+          gh release create "v${VERSION}" --verify-tag --generate-notes --title "Buzz for Cloudron v${VERSION}"
+
+      - name: Confirm existing publication is complete
+        if: steps.release.outputs.publish == 'false'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          git fetch origin --tags
+          git rev-parse --verify "refs/tags/v${VERSION}"
+          gh release view "v${VERSION}" >/dev/null

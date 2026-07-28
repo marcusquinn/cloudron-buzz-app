@@ -41,7 +41,7 @@ The upstream source is available in the
 This package deploys one private Buzz relay with:
 
 - Buzz relay, administration CLI, invite surface, and early Git forge from
-  upstream `v0.4.26`.
+  upstream `v0.5.0`.
 - Cloudron-managed PostgreSQL for authoritative relational and event state.
 - Cloudron-managed Redis for pub/sub, admission control, and replay protection.
 - A private, loopback-only MinIO server for durable media and Git packfiles.
@@ -238,7 +238,7 @@ client flow.
 
 ## Requirements
 
-- Cloudron `8.0.0` or newer.
+- Cloudron `9.1.0` or newer.
 - 1 GiB memory by default. Increase this for heavy Git or media activity.
 - Cloudron local-storage, PostgreSQL, and Redis addons.
 - A Buzz desktop or mobile client for full chat and agent workflows.
@@ -263,7 +263,7 @@ follows:
    identity. Back up the private `nsec` in secure storage. Never paste it into
    Cloudron or send it to another person.
 2. Choose **Join a community**. Do not choose **Create a community** or
-   **I own the community**: in Buzz `v0.4.26`, those options start the hosted
+   **I own the community**: in Buzz `v0.5.0`, those options start the hosted
    Builderlab workflow rather than connecting to a self-hosted relay.
 3. Enter the Cloudron relay URL, replacing the example hostname with the app
    domain:
@@ -358,7 +358,7 @@ membership, media, and Git state.
 ./test/package-test.sh
 
 # Build the pinned linux/amd64 Cloudron package
-docker build --tag cloudron-buzz-app:test .
+docker build --platform linux/amd64 --tag cloudron-buzz-app:test .
 
 # Install or update on Cloudron
 cloudron install --location buzz
@@ -379,13 +379,20 @@ curl --fail --header "Accept: application/nostr+json" "https://buzz.example.com/
 The first response should report `{"status":"ready"}`. The NIP-11 document
 should advertise authentication and restricted writes.
 
+Reviewed package-version changes merged to `main` are publication-authorized by
+repository policy. The `Publish Cloudron Catalog` workflow reruns package and
+upstream-provenance checks, builds and anonymously verifies an immutable
+`linux/amd64` GHCR image, uses the Cloudron CLI to add and promote the catalog
+entry, and atomically pushes the catalog commit and matching tag. See
+[PUBLISHING.md](PUBLISHING.md) for safeguards and recovery.
+
 ## Version and provenance pins
 
-- **Buzz**: `v0.4.26`, commit
-  `0096d710ed2e6abab19aaf7cdc14e3ee603d7ec8`, image digest
-  `sha256:32a8c6aa8ca3617d767eb5743891f45d956c9cdbe161d244c8702a7645b64a78`.
+- **Buzz**: `v0.5.0`, commit
+  `4a977c588a540be38bd8ddb268cd24437bac8165`, image digest
+  `sha256:98b68d4094e452a962a513d37d54d3533bfd9d08265abcc02b1dc1784c51b743`.
   Independent registry inspection confirms its `linux/amd64` child manifest is
-  `sha256:fffed2f1a5a7f14cd44d085dc323e78c26586de0b4832ff78dc518b3eabc7224`
+  `sha256:267485917f7b83c7af0e151ffc39f94784a1f54d8014fef6335e08a22f12ecff`
   and its OCI revision label matches the commit. Re-run the registry and
   release-tag checks with `./test/verify-buzz-image.sh`.
 - **MinIO**: `RELEASE.2025-09-07T16-13-09Z`, image digest
