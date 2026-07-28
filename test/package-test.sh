@@ -38,6 +38,31 @@ assert_contains() {
 	return 0
 }
 
+check_release_workflows() {
+	assert_contains .agents/AGENTS.md 'wss://<app-host>' || return 1
+	assert_contains .agents/AGENTS.md "public \`npub\` or hexadecimal public key" || return 1
+	assert_contains .agents/AGENTS.md "transmit an \`nsec\` or any other private key" || return 1
+	assert_contains .agents/AGENTS.md '/app/code/buzz-ctl set-owner <NPUB_OR_HEX_PUBKEY>' || return 1
+	assert_contains .github/workflows/cloudron-package-release.yml "tags:" || return 1
+	assert_contains .github/workflows/cloudron-package-release.yml "- 'v*'" || return 1
+	assert_contains .github/workflows/cloudron-package-release.yml "uses: marcusquinn/aidevops/.github/workflows/cloudron-package-release-reusable.yml@22a6b4b29087ce2fcf3857596a40ff7b2c436482" || return 1
+	assert_contains .github/workflows/cloudron-package-release.yml "aidevops_ref: 22a6b4b29087ce2fcf3857596a40ff7b2c436482" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "branches:" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "- main" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "packages: write" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "pull-requests: read" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "CLOUDRON_CLI_INTEGRITY: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "cloudron@\${CLOUDRON_CLI_VERSION}" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml 'author_association == "OWNER"' || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "./scripts/publish-cloudron-catalog.sh \"\$IMAGE_REF\"" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml 'git push --atomic' || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml 'gh release create' || return 1
+	assert_contains scripts/publish-cloudron-catalog.sh "cloudron versions add --image \"\$image_ref\" --state testing" || return 1
+	assert_contains scripts/publish-cloudron-catalog.sh "cloudron versions update --image \"\$image_ref\" --version \"\$package_version\" --state published" || return 1
+	pass "Managed release workflow and private-community onboarding"
+	return 0
+}
+
 main() {
 	local required_file=""
 	local shell_script=""
@@ -83,27 +108,7 @@ main() {
 	fi
 	pass "Public source path safety"
 
-	assert_contains .agents/AGENTS.md 'wss://<app-host>' || return 1
-	assert_contains .agents/AGENTS.md "public \`npub\` or hexadecimal public key" || return 1
-	assert_contains .agents/AGENTS.md "transmit an \`nsec\` or any other private key" || return 1
-	assert_contains .agents/AGENTS.md '/app/code/buzz-ctl set-owner <NPUB_OR_HEX_PUBKEY>' || return 1
-	assert_contains .github/workflows/cloudron-package-release.yml "tags:" || return 1
-	assert_contains .github/workflows/cloudron-package-release.yml "- 'v*'" || return 1
-	assert_contains .github/workflows/cloudron-package-release.yml "uses: marcusquinn/aidevops/.github/workflows/cloudron-package-release-reusable.yml@22a6b4b29087ce2fcf3857596a40ff7b2c436482" || return 1
-	assert_contains .github/workflows/cloudron-package-release.yml "aidevops_ref: 22a6b4b29087ce2fcf3857596a40ff7b2c436482" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "branches:" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "- main" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "packages: write" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "pull-requests: read" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "CLOUDRON_CLI_INTEGRITY: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "cloudron@\${CLOUDRON_CLI_VERSION}" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'author_association == "OWNER"' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "./scripts/publish-cloudron-catalog.sh \"\$IMAGE_REF\"" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'git push --atomic' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'gh release create' || return 1
-	assert_contains scripts/publish-cloudron-catalog.sh "cloudron versions add --image \"\$image_ref\" --state testing" || return 1
-	assert_contains scripts/publish-cloudron-catalog.sh "cloudron versions update --image \"\$image_ref\" --version \"\$package_version\" --state published" || return 1
-	pass "Managed release workflow and private-community onboarding"
+	check_release_workflows || return 1
 
 	assert_contains Dockerfile "FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-4a977c5@sha256:98b68d4094e452a962a513d37d54d3533bfd9d08265abcc02b1dc1784c51b743 AS buzz" || return 1
 	assert_contains THIRD_PARTY_NOTICES.md "ghcr.io/block/buzz:sha-4a977c5@sha256:98b68d4094e452a962a513d37d54d3533bfd9d08265abcc02b1dc1784c51b743" || return 1
