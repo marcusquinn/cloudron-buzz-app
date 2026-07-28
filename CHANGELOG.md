@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-07-28
+
+### Added
+
+- Add guarded main-branch publication that builds a public, immutable
+  `linux/amd64` GHCR image, generates the catalog entry with the Cloudron CLI,
+  and atomically publishes the catalog commit and package tag.
+
+### Changed
+
+- Upgrade the pinned Buzz relay and web assets from `v0.4.26` to `v0.5.0`,
+  including use-limited invites, richer search filters, and relay reliability
+  improvements.
+
+### Security
+
+- Include upstream `nostr` 0.44.6, which addresses RUSTSEC-2026-0216 in NIP-44
+  payload handling.
+
 ## [0.1.6] - 2026-07-26
 
 ### Changed
