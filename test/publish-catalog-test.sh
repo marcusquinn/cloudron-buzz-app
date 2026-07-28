@@ -133,6 +133,7 @@ test_mutable_reference_rejected() {
 	local fixture_dir="${TEST_ROOT}/mutable"
 	local bin_dir="${TEST_ROOT}/bin"
 	write_fixture "$fixture_dir"
+	write_fake_cloudron "$bin_dir"
 	if CLOUDRON_PACKAGE_ROOT="$fixture_dir" PATH="${bin_dir}:$PATH" "$PUBLISHER" "ghcr.io/example/package:1.2.3" >/dev/null 2>&1; then
 		fail "mutable image reference is rejected"
 	else
@@ -146,6 +147,7 @@ test_existing_version_rejected() {
 	local bin_dir="${TEST_ROOT}/bin"
 	local before=""
 	write_fixture "$fixture_dir"
+	write_fake_cloudron "$bin_dir"
 	jq '.versions["1.2.3"] = {publishState: "published"}' "${fixture_dir}/CloudronVersions.json" >"${fixture_dir}/existing.json"
 	mv "${fixture_dir}/existing.json" "${fixture_dir}/CloudronVersions.json"
 	before=$(cksum "${fixture_dir}/CloudronVersions.json")
@@ -167,6 +169,7 @@ test_invalid_cli_output_rolls_back() {
 	local bin_dir="${TEST_ROOT}/bin"
 	local before=""
 	write_fixture "$fixture_dir"
+	write_fake_cloudron "$bin_dir"
 	before=$(cksum "${fixture_dir}/CloudronVersions.json")
 	if CLOUDRON_PACKAGE_ROOT="$fixture_dir" FAKE_CLOUDRON_CORRUPT=true PATH="${bin_dir}:$PATH" "$PUBLISHER" "ghcr.io/example/package@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" >/dev/null 2>&1; then
 		fail "invalid Cloudron CLI output is rejected"

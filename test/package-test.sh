@@ -51,10 +51,12 @@ check_release_workflows() {
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "- main" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "packages: write" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "pull-requests: read" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "persist-credentials: false" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "CLOUDRON_CLI_INTEGRITY: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "cloudron@\${CLOUDRON_CLI_VERSION}" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'author_association == "OWNER"' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "./scripts/publish-cloudron-catalog.sh \"\$IMAGE_REF\"" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "gh auth setup-git" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'git push --atomic' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'gh release create' || return 1
 	assert_contains scripts/publish-cloudron-catalog.sh "cloudron versions add --image \"\$image_ref\" --state testing" || return 1

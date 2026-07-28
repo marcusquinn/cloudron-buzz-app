@@ -32,6 +32,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Determine whether publication is required
         id: release
@@ -157,6 +158,8 @@ jobs:
           git add CloudronVersions.json
           git commit -m "chore(release): publish Buzz catalog ${VERSION}"
           git tag --annotate "v${VERSION}" --message "Buzz for Cloudron v${VERSION}"
+          # aidevops:trust-boundary — configure push credentials only after all source-derived build and validation steps.
+          gh auth setup-git
           git push --atomic origin HEAD:main "refs/tags/v${VERSION}"
           gh release create "v${VERSION}" --verify-tag --generate-notes --title "Buzz for Cloudron v${VERSION}"
 
