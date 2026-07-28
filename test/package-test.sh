@@ -51,6 +51,7 @@ check_release_workflows() {
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "- main" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "packages: write" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "pull-requests: read" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "persist-credentials: false" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "CLOUDRON_CLI_INTEGRITY: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "cloudron@\${CLOUDRON_CLI_VERSION}" || return 1
