@@ -22,4 +22,4 @@ on:
 
 jobs:
   check:
-    uses: marcusquinn/aidevops/.github/workflows/linked-issue-check-reusable.yml@main
+    uses: marcusquinn/aidevops/.github/workflows/linked-issue-check-reusable.yml@2e256f481c378ca338d70f4b73493d65b8cc396d # main
