@@ -14,6 +14,11 @@ name: Repository Metrics — generate local README data and badges
 # It runs weekly and after default-branch pushes, but skips if metrics are
 # already fresh (24h by default). It does not run on pull_request events.
 
+# Permissions ceiling for downstream repos with default_workflow_permissions: read.
+# Reusable workflow job-level permissions cannot exceed the caller's ceiling.
+permissions:
+  contents: write
+
 on:
   push:
     branches: [main]
@@ -26,8 +31,6 @@ on:
 
 jobs:
   metrics:
-    permissions:
-      contents: write
     uses: marcusquinn/aidevops/.github/workflows/loc-badge-reusable.yml@c1f523df34f348cc342d7e28e5f6ac0f0cb0c14e
     with:
       # Keep this equal to the ref on `uses:` so helper code is pinned with the reusable YAML.
