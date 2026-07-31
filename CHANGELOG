@@ -1,3 +1,7 @@
+[0.1.8]
+* Upgrade Buzz to v0.5.2 with community-invite, shared-agent, and client reliability refinements.
+* Refresh immutable image and upstream release provenance verification.
+
 [0.1.7]
 * Upgrade Buzz to v0.5.0 with use-limited invites, richer search, and relay reliability and security fixes.
 * Publish verified package images and Cloudron catalog entries automatically after reviewed main-branch updates.
