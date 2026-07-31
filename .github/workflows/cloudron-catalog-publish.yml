@@ -140,9 +140,14 @@ jobs:
       - name: Atomically publish catalog and package tag
         if: steps.release.outputs.publish == 'true'
         env:
+          GH_TOKEN: ${{ secrets.CLOUDRON_RELEASE_PAT }}
           VERSION: ${{ steps.release.outputs.version }}
         run: |
           set -euo pipefail
+          if [[ -z "$GH_TOKEN" ]]; then
+            printf 'CLOUDRON_RELEASE_PAT is not configured for this repository\n' >&2
+            exit 1
+          fi
           git fetch origin main --tags
           remote_main=$(git rev-parse origin/main)
           if [[ "$remote_main" != "$GITHUB_SHA" ]]; then
@@ -156,11 +161,22 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add CloudronVersions.json
-          git commit -m "chore(release): publish Buzz catalog ${VERSION}"
+          git commit -m "chore(release): publish Buzz catalog ${VERSION} [skip ci]"
           git tag --annotate "v${VERSION}" --message "Buzz for Cloudron v${VERSION}"
           # aidevops:trust-boundary — configure push credentials only after all source-derived build and validation steps.
           gh auth setup-git
           git push --atomic origin HEAD:main "refs/tags/v${VERSION}"
+
+      - name: Create GitHub release
+        if: steps.release.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            exit 0
+          fi
           gh release create "v${VERSION}" --verify-tag --generate-notes --title "Buzz for Cloudron v${VERSION}"
 
       - name: Confirm existing publication is complete
