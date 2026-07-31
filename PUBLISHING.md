@@ -28,6 +28,22 @@ Concurrency is serialized and all state changes fail closed. A failed run can
 be retried with the workflow's manual dispatch after resolving the reported
 gate; never bypass a failed provenance, anonymous-pull, or catalog assertion.
 
+## Release credential
+
+The protected `main` branch requires the repository secret
+`CLOUDRON_RELEASE_PAT`. Use a separate fine-grained PAT for this repository,
+owned by a repository administrator and limited to this repository with only
+`Contents: Read and write`. Do not grant workflow permissions or reuse the
+credential in another repository. The workflow exposes it only to the final
+validated catalog commit and atomic tag push; GHCR and GitHub release
+operations continue to use `GITHUB_TOKEN`. The generated catalog commit
+includes `[skip ci]` so its PAT-authenticated branch and tag push cannot launch
+duplicate publication workflows.
+
+If the PAT is absent, expired, or revoked, publication fails before the push
+without changing the catalog or tag. Rotate the repository secret and rerun the
+workflow from `main`.
+
 ## Manual release fallback
 
 1. Finish the package release and update `CloudronManifest.json`, `CHANGELOG`,
