@@ -1,0 +1,5 @@
+# Shared Beads bootstrap settings.
+sync.remote: "https://github.com/marcusquinn/cloudron-buzz-app.git"
+
+# Issue history is synchronized through refs/dolt/data, not source commits.
+export.git-add: false
