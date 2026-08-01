@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-08-01
+
+### Changed
+
+- Upgrade the pinned Buzz relay and web assets from `v0.5.2` to
+  `desktop-v0.5.3`, including upstream relay, Git, storage, shared-compute, and
+  client reliability refinements.
+- Refresh the immutable image, release-tag, and OCI revision provenance checks.
+
 ## [0.1.8] - 2026-07-31
 
 ### Changed

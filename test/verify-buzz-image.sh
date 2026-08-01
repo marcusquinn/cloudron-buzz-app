@@ -4,11 +4,11 @@
 
 set -euo pipefail
 
-readonly BUZZ_RELEASE="v0.5.2"
-readonly BUZZ_REVISION="3e48f1b2365d326ee1c9582448d86a99b44ecd5d"
-readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-3e48f1b"
-readonly BUZZ_INDEX_DIGEST="sha256:12763e38fd99fe8f4e63466a08ea8e3afbda4da0ebd1f51f0b57d78f9b082abe"
-readonly BUZZ_AMD64_DIGEST="sha256:ebd7764efbdc225dea573331cd910b62cb7a3a1b675e89345714314f608a6f39"
+readonly BUZZ_RELEASE="desktop-v0.5.3"
+readonly BUZZ_REVISION="3a96acea09b4a9e3f02c3a26cfb0607d2ccacf42"
+readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-3a96ace"
+readonly BUZZ_INDEX_DIGEST="sha256:535cb1b2f782824423c34d1dc72a210d1f51ccdb13dbc5785d3ef103d2a4d30a"
+readonly BUZZ_AMD64_DIGEST="sha256:76fb0948fc9edda663b6d5096bffa480762295ae9313101d2fefd4ee588f8ef3"
 
 main() {
 	local image_metadata=""
