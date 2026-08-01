@@ -11,7 +11,9 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  attestations: write
   contents: write
+  id-token: write
   packages: write
   pull-requests: read
 
@@ -19,7 +21,7 @@ jobs:
   # aidevops:trust-boundary — publication runs only in the canonical repository
   # after reviewed source reaches main; fork and pull-request contexts cannot run it.
   publish:
-    if: github.repository == 'marcusquinn/cloudron-buzz-app'
+    if: github.repository == 'marcusquinn/cloudron-buzz-app' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -109,7 +111,30 @@ jobs:
           docker push "$image_tag"
           metadata=$(docker buildx imagetools inspect "$image_tag" --format '{{json .}}')
           digest=$(jq -er '.manifest.digest | select(test("^sha256:[0-9a-f]{64}$"))' <<<"$metadata")
+          printf 'digest=%s\n' "$digest" >>"$GITHUB_OUTPUT"
           printf 'image_ref=%s@%s\n' "$image_tag" "$digest" >>"$GITHUB_OUTPUT"
+
+      - name: Attest package image provenance
+        if: steps.release.outputs.publish == 'true'
+        id: image-attestation
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-name: ${{ env.IMAGE_REPOSITORY }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+
+      - name: Verify the exact package image attestation
+        if: steps.release.outputs.publish == 'true'
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.image-attestation.outputs.bundle-path }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          set -euo pipefail
+          gh attestation verify "oci://${IMAGE_REPOSITORY}@${IMAGE_DIGEST}" \
+            --bundle "$ATTESTATION_BUNDLE" \
+            --repo marcusquinn/cloudron-buzz-app \
+            --signer-workflow marcusquinn/cloudron-buzz-app/.github/workflows/cloudron-catalog-publish.yml \
+            --source-ref refs/heads/main
 
       - name: Verify anonymous registry access
         if: steps.release.outputs.publish == 'true'
@@ -136,6 +161,23 @@ jobs:
             .versions[$version].manifest.version == $version and
             .versions[$version].manifest.dockerImage == $image
           ' CloudronVersions.json >/dev/null
+
+      - name: Attest Cloudron catalog provenance
+        id: catalog-attestation
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-path: CloudronVersions.json
+
+      - name: Verify the exact Cloudron catalog attestation
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.catalog-attestation.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          gh attestation verify CloudronVersions.json \
+            --bundle "$ATTESTATION_BUNDLE" \
+            --repo marcusquinn/cloudron-buzz-app \
+            --signer-workflow marcusquinn/cloudron-buzz-app/.github/workflows/cloudron-catalog-publish.yml \
+            --source-ref refs/heads/main
 
       - name: Atomically publish catalog and package tag
         if: steps.release.outputs.publish == 'true'

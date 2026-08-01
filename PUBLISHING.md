@@ -14,12 +14,17 @@ For a manifest version that is not yet in the catalog, the workflow:
 
 1. Re-runs package, ShellCheck, and upstream image-provenance checks.
 2. Builds and pushes a `linux/amd64` package image to GHCR.
-3. Resolves the registry digest and proves the image is anonymously readable.
+3. Resolves the registry digest, creates a Sigstore keyless build-provenance
+   attestation for that exact image, verifies the emitted bundle against this
+   repository's publishing workflow on `refs/heads/main`, and proves the image
+   is anonymously readable.
 4. Runs `scripts/publish-cloudron-catalog.sh`, which uses
    `cloudron versions add --image=<DIGEST> --state=testing` and then promotes
    that exact entry with
    `cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published`.
-5. Re-runs package checks and exact catalog assertions.
+5. Re-runs package checks and exact catalog assertions, then creates and
+   verifies a keyless build-provenance attestation for the exact
+   `CloudronVersions.json` file.
 6. Fails if `main` advanced, otherwise atomically pushes the generated catalog
    commit and matching `v<VERSION>` tag, then creates the GitHub release.
 
@@ -27,6 +32,15 @@ The catalog stores the immutable digest reference, not a mutable image tag.
 Concurrency is serialized and all state changes fail closed. A failed run can
 be retried with the workflow's manual dispatch after resolving the reported
 gate; never bypass a failed provenance, anonymous-pull, or catalog assertion.
+Manual dispatches are restricted to `refs/heads/main`. When the current package
+version is already published, the workflow still attests and verifies the
+current `CloudronVersions.json`; this signs the existing catalog during the
+attestation rollout without rebuilding or republishing the image.
+
+GitHub stores the keyless attestations and Sigstore transparency evidence, and
+the image attestation is also pushed to GHCR. These attestations provide an
+independently verifiable publication record, but Cloudron does not yet enforce
+attestation verification when it installs or updates an app.
 
 ## Release credential
 
