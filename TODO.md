@@ -81,9 +81,6 @@ Format: `- [ ] tNNN Description @owner #tag ~estimate risk:level logged:date`
 
 - [ ] t014 Fix Buzz 0.1.4 release changelog validation ref:GH#21
 
-
-- [ ] t016 Add keyless provenance for Cloudron releases ref:GH#44
-
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
@@ -98,7 +95,8 @@ Format: `- [ ] tNNN Description @owner #tag ~estimate risk:level logged:date`
 
 ## Done
 
-- [x] t015 Protect Buzz catalog publication with a scoped PAT ref:GH#39 pr:#40 testing:runtime-verified completed:2026-07-31
+- [x] t015 Protect Buzz catalog publication with a scoped PAT ref:GH#39 pr:#40
+  testing:runtime-verified completed:2026-07-31
 <!--TOON:done[1]{id,desc,owner,tags,est,actual,logged,started,completed,status}:
 t007,Fix metrics workflow caller permission,,bug,,,,,2026-07-22,done
 -->
