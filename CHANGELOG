@@ -1,3 +1,7 @@
+[0.1.9]
+* Upgrade Buzz to desktop-v0.5.3 with relay, Git, storage, shared-compute, and client reliability refinements.
+* Refresh immutable image and upstream release provenance verification.
+
 [0.1.8]
 * Upgrade Buzz to v0.5.2 with community-invite, shared-agent, and client reliability refinements.
 * Refresh immutable image and upstream release provenance verification.
