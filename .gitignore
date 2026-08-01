@@ -5,7 +5,10 @@
 .agents/loop-state/
 .agents/memory/
 .agents/tmp/
-.beads/
+.beads/*
+!.beads/.gitignore
+!.beads/config.yaml
+!.beads/metadata.json
 .claude/
 .windsurf/
 CLAUDE.md
