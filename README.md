@@ -41,7 +41,7 @@ The upstream source is available in the
 This package deploys one private Buzz relay with:
 
 - Buzz relay, administration CLI, invite surface, and early Git forge from
-  upstream `desktop-v0.5.3`.
+  upstream `desktop-v0.5.4`.
 - Cloudron-managed PostgreSQL for authoritative relational and event state.
 - Cloudron-managed Redis for pub/sub, admission control, and replay protection.
 - A private, loopback-only MinIO server for durable media and Git packfiles.
@@ -388,11 +388,11 @@ entry, and atomically pushes the catalog commit and matching tag. See
 
 ## Version and provenance pins
 
-- **Buzz**: `desktop-v0.5.3`, commit
-  `3a96acea09b4a9e3f02c3a26cfb0607d2ccacf42`, image digest
-  `sha256:535cb1b2f782824423c34d1dc72a210d1f51ccdb13dbc5785d3ef103d2a4d30a`.
+- **Buzz**: `desktop-v0.5.4`, commit
+  `651f6372754e60e3f936b3397040eb0f1e44c9f3`, image digest
+  `sha256:3f8d3ff503dc735e5578e68194b1dbf543e6e792ae1c7e906c735ee269d2841c`.
   Independent registry inspection confirms its `linux/amd64` child manifest is
-  `sha256:76fb0948fc9edda663b6d5096bffa480762295ae9313101d2fefd4ee588f8ef3`
+  `sha256:e47c31ff9bdd0359e25b9115e69c4a46c1f9cf3c508295d5a020fee6a8f40632`
   and its OCI revision label matches the commit. Re-run the registry and
   release-tag checks with `./test/verify-buzz-image.sh`.
 - **MinIO**: `RELEASE.2025-09-07T16-13-09Z`, image digest

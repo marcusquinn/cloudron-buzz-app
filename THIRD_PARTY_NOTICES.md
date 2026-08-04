@@ -7,12 +7,12 @@ upstream container images.
 
 - Project: Buzz by Block, Inc.
 - Source: <https://github.com/block/buzz>
-- Release: `desktop-v0.5.3`
-- Commit: `3a96acea09b4a9e3f02c3a26cfb0607d2ccacf42`
-- Image: `ghcr.io/block/buzz:sha-3a96ace@sha256:535cb1b2f782824423c34d1dc72a210d1f51ccdb13dbc5785d3ef103d2a4d30a`
-- Linux/amd64 manifest: `sha256:76fb0948fc9edda663b6d5096bffa480762295ae9313101d2fefd4ee588f8ef3`
+- Release: `desktop-v0.5.4`
+- Commit: `651f6372754e60e3f936b3397040eb0f1e44c9f3`
+- Image: `ghcr.io/block/buzz:sha-651f637@sha256:3f8d3ff503dc735e5578e68194b1dbf543e6e792ae1c7e906c735ee269d2841c`
+- Linux/amd64 manifest: `sha256:e47c31ff9bdd0359e25b9115e69c4a46c1f9cf3c508295d5a020fee6a8f40632`
 - Provenance: independently registry-inspected; the OCI revision label and
-  upstream `desktop-v0.5.3` tag both resolve to the commit above.
+  upstream `desktop-v0.5.4` tag both resolve to the commit above.
 - License: Apache License 2.0; see `LICENSES/Apache-2.0.txt`.
 
 The Buzz name and related marks belong to their respective owners. This
