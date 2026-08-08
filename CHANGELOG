@@ -1,3 +1,7 @@
+[0.1.11]
+* Upgrade Buzz to desktop-v0.5.7 with authenticated media reads, managed-agent relay events, and client reliability fixes.
+* Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
+
 [0.1.10]
 * Upgrade Buzz to desktop-v0.5.4 with upstream relay, Git, storage, shared-compute, and client refinements.
 * Refresh immutable image and upstream release provenance verification.
