@@ -4,11 +4,12 @@
 
 set -euo pipefail
 
-readonly BUZZ_RELEASE="desktop-v0.5.4"
-readonly BUZZ_REVISION="651f6372754e60e3f936b3397040eb0f1e44c9f3"
-readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-651f637"
-readonly BUZZ_INDEX_DIGEST="sha256:3f8d3ff503dc735e5578e68194b1dbf543e6e792ae1c7e906c735ee269d2841c"
-readonly BUZZ_AMD64_DIGEST="sha256:e47c31ff9bdd0359e25b9115e69c4a46c1f9cf3c508295d5a020fee6a8f40632"
+readonly BUZZ_RELEASE="desktop-v0.5.7"
+readonly BUZZ_RELEASE_REVISION="f167818d25dd9f03115ab907a16f07daee2ece5c"
+readonly BUZZ_REVISION="74b913cff8512c015dc6f1a7473b253fa803f954"
+readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-74b913c"
+readonly BUZZ_INDEX_DIGEST="sha256:2d7001137aa4e61b0548f6125f555715fa9933be50280b1d3c5ea2fb6cfa7ef1"
+readonly BUZZ_AMD64_DIGEST="sha256:804b7c2b6ed5334283a29f1e4adfa5b8d17ee5d7a2f4e0d67978212fe9b018fd"
 
 main() {
 	local image_metadata=""
@@ -17,6 +18,7 @@ main() {
 	local release_object_type=""
 	local release_revision=""
 	local release_tag_depth=0
+	local ancestry_metadata=""
 
 	for command_name in docker gh jq; do
 		if ! command -v "$command_name" >/dev/null; then
@@ -56,13 +58,19 @@ main() {
 		return 1
 	fi
 	release_revision="$release_object_sha"
-	if [[ "$release_revision" != "$BUZZ_REVISION" ]]; then
+	if [[ "$release_revision" != "$BUZZ_RELEASE_REVISION" ]]; then
 		printf "Buzz release %s resolves to unexpected revision %s\n" "$BUZZ_RELEASE" "$release_revision" >&2
 		return 1
 	fi
+	ancestry_metadata=$(gh api "repos/block/buzz/compare/${BUZZ_REVISION}...${BUZZ_RELEASE_REVISION}") || return 1
+	jq --exit-status '.status == "ahead" and .ahead_by == 1 and .behind_by == 0' \
+		<<<"$ancestry_metadata" >/dev/null || {
+		printf "Buzz image revision is not the immediate ancestor of release %s\n" "$BUZZ_RELEASE" >&2
+		return 1
+	}
 
-	printf "Verified %s: index %s, linux/amd64 %s, revision %s\n" \
-		"$BUZZ_RELEASE" "$BUZZ_INDEX_DIGEST" "$BUZZ_AMD64_DIGEST" "$BUZZ_REVISION"
+	printf "Verified %s: index %s, linux/amd64 %s, image revision %s, release revision %s\n" \
+		"$BUZZ_RELEASE" "$BUZZ_INDEX_DIGEST" "$BUZZ_AMD64_DIGEST" "$BUZZ_REVISION" "$BUZZ_RELEASE_REVISION"
 	return 0
 }
 
