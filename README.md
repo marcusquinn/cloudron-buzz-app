@@ -41,7 +41,7 @@ The upstream source is available in the
 This package deploys one private Buzz relay with:
 
 - Buzz relay, administration CLI, invite surface, and early Git forge from
-  upstream `desktop-v0.5.7`.
+  upstream `desktop-v0.5.8`.
 - Cloudron-managed PostgreSQL for authoritative relational and event state.
 - Cloudron-managed Redis for pub/sub, admission control, and replay protection.
 - A private, loopback-only MinIO server for durable media and Git packfiles.
@@ -388,12 +388,12 @@ entry, and atomically pushes the catalog commit and matching tag. See
 
 ## Version and provenance pins
 
-- **Buzz**: `desktop-v0.5.7`, release commit
-  `f167818d25dd9f03115ab907a16f07daee2ece5c`, image revision
-  `74b913cff8512c015dc6f1a7473b253fa803f954`, and image digest
-  `sha256:2d7001137aa4e61b0548f6125f555715fa9933be50280b1d3c5ea2fb6cfa7ef1`.
+- **Buzz**: `desktop-v0.5.8`, release commit
+  `f3de860574bb3119018b4592353e9761635aeb07`, image revision
+  `6a17d035f79ad582ca3f4f3cdc38d376f2c4087f`, and image digest
+  `sha256:ce87d6d4ce39cc9e3bd19d356b05179d64a39e30c0d0fe1630b18ab1ed0963b8`.
   Independent registry inspection confirms its `linux/amd64` child manifest is
-  `sha256:804b7c2b6ed5334283a29f1e4adfa5b8d17ee5d7a2f4e0d67978212fe9b018fd`.
+  `sha256:c1010e04273db0ba495b73a74246819f8a22a4e74275618ba47f75ca8c8febd8`.
   Its OCI revision label matches the image revision, which is the immediate
   ancestor of the release-only tag commit. Re-run the registry and release-tag
   checks with `./test/verify-buzz-image.sh`.
@@ -401,8 +401,8 @@ entry, and atomically pushes the catalog commit and matching tag. See
   `sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2`.
 - **MinIO client**: `RELEASE.2025-08-13T08-35-41Z`, image digest
   `sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780`.
-- **Cloudron base**: `5.0.0`, image digest
-  `sha256:04fd70dbd8ad6149c19de39e35718e024417c3e01dc9c6637eaf4a41ec4e596c`.
+- **Cloudron base**: `5.1.0`, image digest
+  `sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e`.
 
 Every build stage is tag-and-digest pinned. Change the version, digest,
 changelog, and verification evidence together during upgrades.

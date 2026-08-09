@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-08-09
+
+### Changed
+
+- Upgrade the pinned Buzz relay and web assets from `desktop-v0.5.7` to
+  `desktop-v0.5.8`, including unified agent-add flows and improved agent
+  handoff-summary budgeting.
+- Refresh the immutable relay image, release-tag, and OCI revision provenance
+  checks.
+
 ## [0.1.11] - 2026-08-08
 
 ### Changed
