@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Update the final runtime image to the supported Cloudron base 5.1.0 release.
+
 ## [0.1.11] - 2026-08-08
 
 ### Changed
