@@ -1,3 +1,8 @@
+[0.1.12]
+* Upgrade Buzz to desktop-v0.5.8 with a unified agent-creation workflow and desktop reliability refinements.
+* Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
+* Upgrade the final Cloudron runtime base to the required 5.1.0 digest.
+
 [0.1.11]
 * Upgrade Buzz to desktop-v0.5.7 with authenticated media reads, managed-agent relay events, and client reliability fixes.
 * Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
