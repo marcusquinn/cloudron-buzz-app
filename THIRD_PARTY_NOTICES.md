@@ -7,14 +7,14 @@ upstream container images.
 
 - Project: Buzz by Block, Inc.
 - Source: <https://github.com/block/buzz>
-- Release: `desktop-v0.5.7`
-- Release commit: `f167818d25dd9f03115ab907a16f07daee2ece5c`
-- Image revision: `74b913cff8512c015dc6f1a7473b253fa803f954`
-- Image: `ghcr.io/block/buzz:sha-74b913c@sha256:2d7001137aa4e61b0548f6125f555715fa9933be50280b1d3c5ea2fb6cfa7ef1`
-- Linux/amd64 manifest: `sha256:804b7c2b6ed5334283a29f1e4adfa5b8d17ee5d7a2f4e0d67978212fe9b018fd`
+- Release: `desktop-v0.5.8`
+- Release commit: `f3de860574bb3119018b4592353e9761635aeb07`
+- Image revision: `6a17d035f79ad582ca3f4f3cdc38d376f2c4087f`
+- Image: `ghcr.io/block/buzz:sha-6a17d03@sha256:ce87d6d4ce39cc9e3bd19d356b05179d64a39e30c0d0fe1630b18ab1ed0963b8`
+- Linux/amd64 manifest: `sha256:c1010e04273db0ba495b73a74246819f8a22a4e74275618ba47f75ca8c8febd8`
 - Provenance: independently registry-inspected; the OCI revision label matches
   the image revision, which is the immediate ancestor of the upstream
-  `desktop-v0.5.7` release-only tag commit.
+  `desktop-v0.5.8` release-only tag commit.
 - License: Apache License 2.0; see `LICENSES/Apache-2.0.txt`.
 
 The Buzz name and related marks belong to their respective owners. This

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-08-10
+
+### Changed
+
+- Upgrade the pinned Buzz relay and web assets from `desktop-v0.5.7` to
+  `desktop-v0.5.8`, including the unified agent-creation workflow and desktop
+  reliability refinements.
+- Verify the immutable relay image revision as the immediate ancestor of the
+  upstream release tag, whose release-only commit has no separate container.
+- Upgrade the final Cloudron runtime base to the currently supported 5.1.0
+  digest required by package release validation.
+
 ## [0.1.11] - 2026-08-08
 
 ### Changed
