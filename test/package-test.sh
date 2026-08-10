@@ -74,6 +74,8 @@ check_release_workflows() {
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "cloudron@\${CLOUDRON_CLI_VERSION}" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'author_association == "OWNER"' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "./scripts/publish-cloudron-catalog.sh \"\$IMAGE_REF\"" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "./test/pairing-proxy-test.sh \"\$image_tag\"" || return 1
+	assert_precedes .github/workflows/cloudron-catalog-publish.yml "./test/pairing-proxy-test.sh \"\$image_tag\"" "docker push \"\$image_tag\"" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "subject-name: \${{ env.IMAGE_REPOSITORY }}" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "subject-digest: \${{ steps.image.outputs.digest }}" || return 1
@@ -108,11 +110,11 @@ main() {
 	local required_file=""
 	local shell_script=""
 
-	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-relay.sh buzz-ctl supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
+	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.12\" and .upstreamVersion == \"0.5.8\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and (has(\"packageUrl\") | not) and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.13\" and .upstreamVersion == \"0.5.8\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and (has(\"packageUrl\") | not) and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
@@ -122,8 +124,8 @@ main() {
 	jq --exit-status '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
 		fail "Historical catalog entries must remain parseable by Cloudron 9.1 and 9.2" || return 1
 	}
-	assert_contains CHANGELOG '[0.1.12]' || return 1
-	assert_contains CHANGELOG.md '[0.1.12]' || return 1
+	assert_contains CHANGELOG '[0.1.13]' || return 1
+	assert_contains CHANGELOG.md '[0.1.13]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.4"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	pass "Cloudron community publishing baseline"
@@ -140,7 +142,7 @@ main() {
 	assert_contains README.md "[SECURITY.md](SECURITY.md)" || return 1
 	assert_contains CloudronManifest.json "wss://\$CLOUDRON-APP-FQDN" || return 1
 	assert_contains SECURITY.md "GitHub's private vulnerability reporting" || return 1
-	assert_contains SECURITY.md "| \`0.1.12\` | \`0.5.8\` | Yes |" || return 1
+	assert_contains SECURITY.md "| \`0.1.13\` | \`0.5.8\` | Yes |" || return 1
 
 	if git -C "$ROOT_DIR" ls-files -s | grep -Eq '^120000 '; then
 		fail "Published source must not contain tracked symlinks" || return 1
@@ -174,7 +176,7 @@ main() {
 	fi
 	pass "Container provenance pins"
 
-	for shell_script in start.sh run-minio.sh run-relay.sh buzz-ctl scripts/publish-cloudron-catalog.sh test/package-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh; do
+	for shell_script in start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl scripts/publish-cloudron-catalog.sh test/package-test.sh test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh; do
 		bash -n "${ROOT_DIR}/${shell_script}"
 		shellcheck "${ROOT_DIR}/${shell_script}"
 	done
@@ -187,9 +189,19 @@ main() {
 	assert_contains run-relay.sh "BUZZ_REQUIRE_MEDIA_GET_AUTH=\"\$FEATURE_ENABLED\"" || return 1
 	assert_contains run-relay.sh "BUZZ_PUSH_GATEWAY_DELIVERY_URL=\"\"" || return 1
 	assert_contains run-relay.sh "BUZZ_GIT_REPO_PATH=\"\${RUN_DIR}/git-repos\"" || return 1
+	assert_contains run-relay.sh "BUZZ_PAIRING_RELAY_URL=\"wss://\${CLOUDRON_APP_DOMAIN}/pair\"" || return 1
+	assert_contains run-relay.sh 'BUZZ_BIND_ADDR="127.0.0.1:3001"' || return 1
+	assert_contains run-pairing-relay.sh 'BUZZ_PAIR_RELAY_BIND_ADDR="127.0.0.1:5000"' || return 1
+	assert_contains nginx.conf 'location = /pair' || return 1
+	assert_contains nginx.conf 'proxy_pass http://buzz_pairing_relay;' || return 1
+	assert_contains nginx.conf 'pairing_client_address>[0-9A-Fa-f:.]+' || return 1
+	assert_contains nginx.conf 'limit_conn pairing_per_client 4;' || return 1
+	assert_contains nginx.conf 'proxy_request_buffering off;' || return 1
+	assert_contains supervisord.conf '[program:buzz-pairing-relay]' || return 1
+	assert_contains supervisord.conf '[program:nginx]' || return 1
 	pass "Production security defaults"
 
-	if grep -Eq "printf.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)|echo.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)" "${ROOT_DIR}/start.sh" "${ROOT_DIR}/run-minio.sh" "${ROOT_DIR}/run-relay.sh" "${ROOT_DIR}/buzz-ctl"; then
+	if grep -Eq "printf.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)|echo.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)" "${ROOT_DIR}/start.sh" "${ROOT_DIR}/run-minio.sh" "${ROOT_DIR}/run-pairing-relay.sh" "${ROOT_DIR}/run-relay.sh" "${ROOT_DIR}/buzz-ctl"; then
 		fail "A runtime script may print secret material" || return 1
 	fi
 	pass "No obvious secret disclosure"

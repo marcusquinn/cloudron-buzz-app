@@ -177,13 +177,15 @@ Internet
    | HTTPS / WSS
    v
 Cloudron reverse proxy
-   |
-   v
-Buzz relay :3000
-   |-- PostgreSQL addon        events, memberships, search, metadata
-   |-- Redis addon             pub/sub, replay guard, rate limiting
-   |-- MinIO :9000 (loopback)  media and immutable Git packfiles
-   `-- /run/buzz               disposable Git hydration and pack cache
+    |
+    v
+nginx :3000
+   |-- /pair -> pairing relay :5000 (loopback)
+   `-- all other routes -> Buzz relay :3001 (loopback)
+          |-- PostgreSQL addon        events, memberships, search, metadata
+          |-- Redis addon             pub/sub, replay guard, rate limiting
+          |-- MinIO :9000 (loopback)  media and immutable Git packfiles
+          `-- /run/buzz               disposable Git hydration and pack cache
 ```
 
 The object store and PostgreSQL are authoritative. Local Git repositories and
@@ -360,6 +362,9 @@ membership, media, and Git state.
 # Build the pinned linux/amd64 Cloudron package
 docker build --platform linux/amd64 --tag cloudron-buzz-app:test .
 
+# Exercise main and exact-path pairing proxy routes in the built image
+./test/pairing-proxy-test.sh cloudron-buzz-app:test
+
 # Install or update on Cloudron
 cloudron install --location buzz
 cloudron update --app buzz
@@ -377,7 +382,8 @@ curl --fail --header "Accept: application/nostr+json" "https://buzz.example.com/
 ```
 
 The first response should report `{"status":"ready"}`. The NIP-11 document
-should advertise authentication and restricted writes.
+should advertise authentication, restricted writes, and the deployment's
+`wss://buzz.example.com/pair` pairing relay URL.
 
 Reviewed package-version changes merged to `main` are publication-authorized by
 repository policy. The `Publish Cloudron Catalog` workflow reruns package and
@@ -414,7 +420,6 @@ pinned Cloudron base image and prevent mixed-architecture binaries.
 - Buzz is early software with rough edges and incomplete areas.
 - The browser UI does not replace the desktop or mobile clients.
 - This package runs one relay and disables the experimental multi-relay mesh.
-- The optional dedicated device-pairing relay is not exposed.
 - External mobile push delivery is disabled by default.
 - The bundled deployment-admin SPA remains intentionally unreachable until a
   private admin hostname and restricted ingress are configured.

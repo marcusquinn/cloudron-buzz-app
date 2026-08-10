@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.1.13] - 2026-08-10
+
+### Fixed
+
+- Run the pinned, stateless Buzz device-pairing relay on loopback and expose
+  only its `/pair` WebSocket route through a package-owned nginx proxy.
+- Advertise the dedicated pairing URL through the main relay's NIP-11 document,
+  preventing Buzz desktop from falling back to an unsupported main-relay route.
+
 ## [0.1.12] - 2026-08-10
 
 ### Changed
