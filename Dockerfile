@@ -32,9 +32,9 @@ COPY --from=minio-client /licenses/CREDITS /usr/share/licenses/minio-client/CRED
 COPY LICENSES/Apache-2.0.txt /usr/share/licenses/buzz/LICENSE
 COPY LICENSE /app/code/LICENSE
 COPY THIRD_PARTY_NOTICES.md /app/code/THIRD_PARTY_NOTICES.md
-COPY start.sh run-minio.sh run-relay.sh buzz-ctl supervisord.conf /app/code/
+COPY start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf /app/code/
 
-RUN chmod 0755 /app/code/start.sh /app/code/run-minio.sh /app/code/run-relay.sh /app/code/buzz-ctl /app/code/bin/buzz-relay /app/code/bin/buzz-admin /app/code/bin/buzz-pair-relay /app/code/bin/minio /app/code/bin/mc
+RUN chmod 0755 /app/code/start.sh /app/code/run-minio.sh /app/code/run-pairing-relay.sh /app/code/run-relay.sh /app/code/buzz-ctl /app/code/bin/buzz-relay /app/code/bin/buzz-admin /app/code/bin/buzz-pair-relay /app/code/bin/minio /app/code/bin/mc
 
 EXPOSE 3000
 

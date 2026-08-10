@@ -176,6 +176,12 @@ main() {
 	ensure_real_directory "${RUN_DIR}/git-repos" 0750 || return 1
 	ensure_real_directory "${RUN_DIR}/git-pack-cache" 0750 || return 1
 	ensure_real_directory "${RUN_DIR}/mc" 0700 || return 1
+	ensure_real_directory "${RUN_DIR}/nginx" 0750 || return 1
+	ensure_real_directory "${RUN_DIR}/nginx/client-body" 0750 || return 1
+	ensure_real_directory "${RUN_DIR}/nginx/fastcgi" 0750 || return 1
+	ensure_real_directory "${RUN_DIR}/nginx/proxy" 0750 || return 1
+	ensure_real_directory "${RUN_DIR}/nginx/scgi" 0750 || return 1
+	ensure_real_directory "${RUN_DIR}/nginx/uwsgi" 0750 || return 1
 	ensure_real_directory "/run/minio" 0750 || return 1
 	ensure_real_directory "/run/supervisor" 0750 || return 1
 

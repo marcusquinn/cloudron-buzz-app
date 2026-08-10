@@ -108,6 +108,7 @@ jobs:
           set -euo pipefail
           image_tag="${IMAGE_REPOSITORY}:${VERSION}"
           docker build --platform linux/amd64 --tag "$image_tag" .
+          ./test/pairing-proxy-test.sh "$image_tag"
           docker push "$image_tag"
           metadata=$(docker buildx imagetools inspect "$image_tag" --format '{{json .}}')
           digest=$(jq -er '.manifest.digest | select(test("^sha256:[0-9a-f]{64}$"))' <<<"$metadata")
