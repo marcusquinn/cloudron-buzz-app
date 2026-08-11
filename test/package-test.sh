@@ -114,7 +114,7 @@ main() {
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.13\" and .upstreamVersion == \"0.5.8\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and (has(\"packageUrl\") | not) and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.14\" and .upstreamVersion == \"0.5.9\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and (has(\"packageUrl\") | not) and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
@@ -124,8 +124,8 @@ main() {
 	jq --exit-status '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
 		fail "Historical catalog entries must remain parseable by Cloudron 9.1 and 9.2" || return 1
 	}
-	assert_contains CHANGELOG '[0.1.13]' || return 1
-	assert_contains CHANGELOG.md '[0.1.13]' || return 1
+	assert_contains CHANGELOG '[0.1.14]' || return 1
+	assert_contains CHANGELOG.md '[0.1.14]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.4"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	pass "Cloudron community publishing baseline"
@@ -142,7 +142,7 @@ main() {
 	assert_contains README.md "[SECURITY.md](SECURITY.md)" || return 1
 	assert_contains CloudronManifest.json "wss://\$CLOUDRON-APP-FQDN" || return 1
 	assert_contains SECURITY.md "GitHub's private vulnerability reporting" || return 1
-	assert_contains SECURITY.md "| \`0.1.13\` | \`0.5.8\` | Yes |" || return 1
+	assert_contains SECURITY.md "| \`0.1.14\` | \`0.5.9\` | Yes |" || return 1
 
 	if git -C "$ROOT_DIR" ls-files -s | grep -Eq '^120000 '; then
 		fail "Published source must not contain tracked symlinks" || return 1
@@ -154,18 +154,18 @@ main() {
 
 	check_release_workflows || return 1
 
-	assert_contains Dockerfile "FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-6a17d03@sha256:ce87d6d4ce39cc9e3bd19d356b05179d64a39e30c0d0fe1630b18ab1ed0963b8 AS buzz" || return 1
-	assert_contains THIRD_PARTY_NOTICES.md "ghcr.io/block/buzz:sha-6a17d03@sha256:ce87d6d4ce39cc9e3bd19d356b05179d64a39e30c0d0fe1630b18ab1ed0963b8" || return 1
-	assert_contains THIRD_PARTY_NOTICES.md "Linux/amd64 manifest: \`sha256:c1010e04273db0ba495b73a74246819f8a22a4e74275618ba47f75ca8c8febd8\`" || return 1
+	assert_contains Dockerfile "FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-f8f2ef0@sha256:9f1a95434ebd8a67259a488ef2a58e90e10371d681729422ac601196d2f260fa AS buzz" || return 1
+	assert_contains THIRD_PARTY_NOTICES.md "ghcr.io/block/buzz:sha-f8f2ef0@sha256:9f1a95434ebd8a67259a488ef2a58e90e10371d681729422ac601196d2f260fa" || return 1
+	assert_contains THIRD_PARTY_NOTICES.md "Linux/amd64 manifest: \`sha256:ef5092b3d7a9ef04ab9cf9297856815a9e8ceb8a0b77dfcaafb52cb19c5801ca\`" || return 1
 	assert_contains THIRD_PARTY_NOTICES.md 'Provenance: independently registry-inspected; the OCI revision label matches' || return 1
-	assert_contains THIRD_PARTY_NOTICES.md "\`desktop-v0.5.8\` release-only tag commit." || return 1
+	assert_contains THIRD_PARTY_NOTICES.md "\`desktop-v0.5.9\` release-only tag commit." || return 1
 	assert_contains README.md './test/verify-buzz-image.sh' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_RELEASE="desktop-v0.5.8"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_RELEASE_REVISION="f3de860574bb3119018b4592353e9761635aeb07"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_REVISION="6a17d035f79ad582ca3f4f3cdc38d376f2c4087f"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-6a17d03"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_INDEX_DIGEST="sha256:ce87d6d4ce39cc9e3bd19d356b05179d64a39e30c0d0fe1630b18ab1ed0963b8"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_AMD64_DIGEST="sha256:c1010e04273db0ba495b73a74246819f8a22a4e74275618ba47f75ca8c8febd8"' || return 1
+	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_RELEASE="desktop-v0.5.9"' || return 1
+	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_RELEASE_REVISION="ee33722615ca1e7b8efb03e2ed641d99448c8899"' || return 1
+	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_REVISION="f8f2ef0440e7a074223ec04dc3b32d817b8b9d9b"' || return 1
+	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-f8f2ef0"' || return 1
+	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_INDEX_DIGEST="sha256:9f1a95434ebd8a67259a488ef2a58e90e10371d681729422ac601196d2f260fa"' || return 1
+	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_AMD64_DIGEST="sha256:ef5092b3d7a9ef04ab9cf9297856815a9e8ceb8a0b77dfcaafb52cb19c5801ca"' || return 1
 	assert_contains test/verify-buzz-image.sh "docker buildx imagetools inspect" || return 1
 	assert_contains test/verify-buzz-image.sh 'org.opencontainers.image.revision' || return 1
 	assert_contains Dockerfile "minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2" || return 1
