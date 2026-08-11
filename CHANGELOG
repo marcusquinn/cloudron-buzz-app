@@ -1,3 +1,7 @@
+[0.1.14]
+* Upgrade Buzz to desktop-v0.5.9 with private-channel invitation restoration, bounded desktop storage caches, and agent reliability improvements.
+* Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
+
 [0.1.13]
 * Enable secure desktop-to-mobile device pairing through a loopback-only pairing relay and the public `/pair` WebSocket route.
 * Advertise the dedicated pairing endpoint in relay metadata while preserving the existing relay, Git, media, and health routes.
