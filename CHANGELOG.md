@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.1.15] - 2026-08-12
+
+### Changed
+
+- Upgrade the pinned Buzz relay and web assets from `desktop-v0.5.9` to
+  `desktop-v0.5.10`, including relay ingest-worker resilience, PostgreSQL
+  tracing, and desktop performance and reliability improvements.
+- Verify the immutable relay image revision as the immediate ancestor of the
+  upstream release tag, whose release-only commit has no separate container.
+
 ## [0.1.14] - 2026-08-11
 
 ### Changed
