@@ -159,6 +159,8 @@ main() {
 	assert_contains THIRD_PARTY_NOTICES.md "Linux/amd64 manifest: \`sha256:ef5092b3d7a9ef04ab9cf9297856815a9e8ceb8a0b77dfcaafb52cb19c5801ca\`" || return 1
 	assert_contains THIRD_PARTY_NOTICES.md 'Provenance: independently registry-inspected; the OCI revision label matches' || return 1
 	assert_contains THIRD_PARTY_NOTICES.md "\`desktop-v0.5.9\` release-only tag commit." || return 1
+	assert_contains THIRD_PARTY_NOTICES.md "- Release commit: \`ee33722615ca1e7b8efb03e2ed641d99448c8899\`" || return 1
+	assert_contains THIRD_PARTY_NOTICES.md "- Image revision: \`f8f2ef0440e7a074223ec04dc3b32d817b8b9d9b\`" || return 1
 	assert_contains README.md './test/verify-buzz-image.sh' || return 1
 	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_RELEASE="desktop-v0.5.9"' || return 1
 	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_RELEASE_REVISION="ee33722615ca1e7b8efb03e2ed641d99448c8899"' || return 1
