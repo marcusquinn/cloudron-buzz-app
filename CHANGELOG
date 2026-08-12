@@ -1,3 +1,7 @@
+[0.1.15]
+* Upgrade Buzz to desktop-v0.5.10 with relay ingest-worker resilience, PostgreSQL tracing, and desktop performance and reliability improvements.
+* Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
+
 [0.1.14]
 * Upgrade Buzz to desktop-v0.5.9 with private-channel invitation restoration, bounded desktop storage caches, and agent reliability improvements.
 * Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
