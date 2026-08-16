@@ -55,6 +55,11 @@ check_release_workflows() {
 	assert_contains .agents/AGENTS.md "public \`npub\` or hexadecimal public key" || return 1
 	assert_contains .agents/AGENTS.md "transmit an \`nsec\` or any other private key" || return 1
 	assert_contains .agents/AGENTS.md '/app/code/buzz-ctl set-owner <NPUB_OR_HEX_PUBKEY>' || return 1
+	assert_contains CloudronManifest.json 'The initial **Not a member yet** message is expected' || return 1
+	assert_contains CloudronManifest.json 'If the Web Terminal stays on **Connecting**' || return 1
+	assert_contains CloudronManifest.json "cloudron exec --app \$CLOUDRON-APP-FQDN -- /app/code/buzz-ctl set-owner <NPUB_OR_HEX_PUBKEY>" || return 1
+	assert_contains CloudronManifest.json 'Never put an nsec or other private key in either command' || return 1
+	assert_contains README.md 'cloudron exec --app buzz.example.com -- /app/code/buzz-ctl set-owner "<NPUB_OR_HEX_PUBKEY>"' || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml "tags:" || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml "- 'v*'" || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml "uses: marcusquinn/aidevops/.github/workflows/cloudron-package-release-reusable.yml@22a6b4b29087ce2fcf3857596a40ff7b2c436482" || return 1
