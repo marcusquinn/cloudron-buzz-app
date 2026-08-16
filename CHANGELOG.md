@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.1.16] - 2026-08-16
+
+### Changed
+
+- Upgrade the pinned Buzz relay and web assets from `desktop-v0.5.10` to
+  `desktop-v0.5.14`, including the upstream release automation update.
+- Verify the immutable relay image revision as the immediate ancestor of the
+  upstream release tag, whose release-only commit has no separate container.
+
 ## [0.1.15] - 2026-08-12
 
 ### Changed
