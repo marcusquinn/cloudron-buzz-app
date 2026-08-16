@@ -289,22 +289,29 @@ follows:
    wss://buzz.example.com
    ```
 
-4. Copy the identity's public `npub` from Buzz. A first connection may be
-   rejected because the identity is not a relay member yet; leave the client
-   open.
-5. Open the app's Cloudron Web Terminal and promote that public identity:
+4. The first connection displays **Not a member yet** because the identity is
+   not a relay member. This is expected. Leave the client open and copy the
+   complete public `npub` it displays.
+5. Promote that public identity using either of these administrator options.
+
+   **Cloudron Web Terminal:**
 
    ```bash
    /app/code/buzz-ctl set-owner "<NPUB_OR_HEX_PUBKEY>"
    ```
 
-   The equivalent Cloudron CLI command is:
+   **Cloudron CLI fallback:** if the Web Terminal stays on **Connecting**, use
+   the Cloudron CLI from your computer instead. Log in to the Cloudron that
+   hosts the app, then target the app by its full domain:
 
    ```bash
-   cloudron exec --app buzz -- /app/code/buzz-ctl set-owner "<NPUB_OR_HEX_PUBKEY>"
+   cloudron login <CLOUDRON_DASHBOARD_HOST>
+   cloudron exec --app buzz.example.com -- /app/code/buzz-ctl set-owner "<NPUB_OR_HEX_PUBKEY>"
    ```
 
-6. Return to Buzz and select **Connect** or **Retry**.
+   Only supply the public `npub` (or public hexadecimal key). Never supply an
+   `nsec` or any other private key.
+6. Return to Buzz and select **Try again**, **Connect**, or **Retry**.
 7. Verify the owner, membership roster, and service health:
 
    ```bash
