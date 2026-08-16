@@ -1,3 +1,7 @@
+[0.1.17]
+* Clarify the expected first-owner membership rejection and local Cloudron CLI recovery path.
+* Reinforce that owner promotion accepts only a public npub or hexadecimal public key.
+
 [0.1.16]
 * Upgrade Buzz to desktop-v0.5.14 with the upstream release automation update.
 * Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
