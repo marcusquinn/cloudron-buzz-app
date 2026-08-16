@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.1.17] - 2026-08-16
+
+### Changed
+
+- Clarify that **Not a member yet** is expected during first-owner setup and
+  document the local Cloudron CLI fallback when the Web Terminal cannot connect.
+- Reinforce that owner promotion accepts only a public `npub` or hexadecimal
+  public key, never an `nsec` or another private key.
+
 ## [0.1.16] - 2026-08-16
 
 ### Changed
