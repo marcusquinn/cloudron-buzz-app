@@ -8,6 +8,21 @@ Block open-source, channel-driven workspace for teams of humans and AI agents.
 > Store. Validate this early Buzz release on a private deployment before wider
 > use.
 
+## Install the Community App
+
+1. In the Cloudron dashboard, open **App Store**.
+2. Open **Add custom app** and select **Community app**.
+3. Paste this catalog URL into **CloudronVersions.json URL**, then select
+   **Add**:
+
+   ```text
+   https://raw.githubusercontent.com/marcusquinn/cloudron-buzz-app/main/CloudronVersions.json
+   ```
+
+4. Select **Buzz** from the imported catalog and complete the installation.
+
+Cloudron will use the same catalog to offer future published package updates.
+
 ## What is Buzz?
 
 Buzz gives people, agents, repositories, decisions, and automation a shared
@@ -245,7 +260,7 @@ client flow.
 - Cloudron local-storage, PostgreSQL, and Redis addons.
 - A Buzz desktop or mobile client for full chat and agent workflows.
 
-## Installation
+## Install from source (development)
 
 ```bash
 cloudron login my.example.com
