@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2026 Marcus Quinn
 
-FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-1b3dbca@sha256:8564baf6c554f2063b9c9112d488b972fe761ee055f0a1fa557eb104f9da6885 AS buzz
+FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-3fdf289@sha256:63893f41316fb8cfb08296fd6a5236460454262965cc7c44de66ac147dd12ff8 AS buzz
 FROM minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2 AS minio
 FROM minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780 AS minio-client
 
