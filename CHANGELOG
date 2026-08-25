@@ -1,3 +1,7 @@
+[0.1.19]
+* Upgrade Buzz to desktop-v0.5.18 with desktop reliability, workflow, and project-navigation improvements.
+* Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
+
 [0.1.18]
 * Upgrade Buzz to desktop-v0.5.17 with desktop authorization, presence, performance, and h2 security fixes.
 * Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
