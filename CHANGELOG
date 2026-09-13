@@ -1,3 +1,8 @@
+[0.1.20]
+* Upgrade Buzz to desktop-v0.5.23 with ACP relay verification, bounded agent scheduling, richer agent context, and desktop interaction refinements.
+* Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
+* Pull the unchanged digest-pinned MinIO artifacts from their available official Quay repositories.
+
 [0.1.19]
 * Upgrade Buzz to desktop-v0.5.18 with desktop reliability, workflow, and project-navigation improvements.
 * Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.

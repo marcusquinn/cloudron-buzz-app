@@ -1,6 +1,21 @@
 # Changelog
 
+<!-- markdownlint-configure-file { "MD024": { "siblings_only": true } } -->
+
 ## [Unreleased]
+
+## [0.1.20] - 2026-09-13
+
+### Changed
+
+- Upgrade the pinned Buzz relay and web assets from `desktop-v0.5.18` to
+  `desktop-v0.5.23`, including verified ACP relay events, bounded agent
+  scheduling, richer agent context, and desktop interaction refinements.
+- Verify the immutable relay image revision as the immediate ancestor of the
+  upstream release tag, whose release-only commit has no separate container.
+- Pull the unchanged digest-pinned MinIO artifacts from their available
+  official Quay repositories after their Docker Hub repositories became
+  unavailable.
 
 ## [0.1.19] - 2026-08-25
 

@@ -7,14 +7,14 @@ upstream container images.
 
 - Project: Buzz by Block, Inc.
 - Source: <https://github.com/block/buzz>
-- Release: `desktop-v0.5.18`
-- Release commit: `39f8b46935736334cdd7045a4e4b5d7eb1a33888`
-- Image revision: `aea0ef8df9fc24d9aa8bf5c761ab2910026a601b`
-- Image: `ghcr.io/block/buzz:sha-aea0ef8@sha256:6e26d9653eaf485182229930a02760e1f70ebfe1570fcbadbb1a436d73e2e647`
-- Linux/amd64 manifest: `sha256:a3294fed2e0a102b99471ca28e139327a90a69070ad9be62397d081e81551cfe`
+- Release: `desktop-v0.5.23`
+- Release commit: `b9392d9d78744df365f9276e1ffe8c1baa5ea903`
+- Image revision: `dad5a33865fc81a2e55b3b60746632f615ec1e3a`
+- Image: `ghcr.io/block/buzz:sha-dad5a33@sha256:c8a9e3f2cbdfb71bb72e1fc2669dd3dad0ca084caa460352fde78ca2af5de9b5`
+- Linux/amd64 manifest: `sha256:4f0688c778d551f118b1b654342e0ae298c23b0748119f075cc13c1e99ba4130`
 - Provenance: independently registry-inspected; the OCI revision label matches
   the image revision, which is the immediate ancestor of the upstream
-  `desktop-v0.5.18` release-only tag commit.
+  `desktop-v0.5.23` release-only tag commit.
 - License: Apache License 2.0; see `LICENSES/Apache-2.0.txt`.
 
 The Buzz name and related marks belong to their respective owners. This
@@ -24,14 +24,14 @@ Cloudron package is not represented as an official Block distribution.
 
 - Release: `RELEASE.2025-09-07T16-13-09Z`
 - Commit: `07c3a429bfed433e49018cb0f78a52145d4bedeb`
-- Image: `minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2`
+- Image: `quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2`
 - License: GNU Affero General Public License v3.
 
 ## MinIO client
 
 - Release: `RELEASE.2025-08-13T08-35-41Z`
 - Commit: `7394ce0dd2a80935aded936b09fa12cbb3cb8096`
-- Image: `minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780`
+- Image: `quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780`
 - License: GNU Affero General Public License v3.
 
 The MinIO image `LICENSE` and `CREDITS` files are copied into
