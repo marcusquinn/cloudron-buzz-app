@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.1.21] - 2026-10-08
+
+### Changed
+
+- Upgrade the pinned Buzz relay binaries and web assets from `desktop-v0.5.23`
+  to `desktop-v0.5.27` using the qualified release-parent image.
+- Refresh registry-inspected image digests and upstream provenance, verifying
+  that the image revision is the immediate ancestor of the release tag.
+
 ## [0.1.20] - 2026-09-13
 
 ### Changed
