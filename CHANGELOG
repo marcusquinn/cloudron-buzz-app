@@ -1,3 +1,7 @@
+[0.1.21]
+* Upgrade Buzz relay binaries and web assets to desktop-v0.5.27.
+* Verify the qualified immutable release-parent image and refresh upstream provenance.
+
 [0.1.20]
 * Upgrade Buzz to desktop-v0.5.23 with ACP relay verification, bounded agent scheduling, richer agent context, and desktop interaction refinements.
 * Verify the immutable relay image revision as the immediate ancestor of the upstream release tag.
