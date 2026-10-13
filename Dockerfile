@@ -27,10 +27,23 @@ COPY --from=silo /licenses/LICENSE /usr/share/licenses/silo/LICENSE
 COPY --from=silo /licenses/CREDITS /usr/share/licenses/silo/CREDITS
 COPY --from=silo /licenses/NOTICE /usr/share/licenses/silo/NOTICE
 
+# musl avoids coupling the release binary to the Cloudron base's glibc version.
+# Checked against the 1.0.1 release SHA256SUMS (not the mutable latest asset).
+ARG RUSTFS_SHA256=a834096dafa1f1a55825a2cdaf49d006a193978d344f2d508c2be475133738a3
+RUN curl --fail --location --retry 3 https://github.com/rustfs/rustfs/releases/download/1.0.1/rustfs-linux-x86_64-musl-v1.0.1.zip -o /run/rustfs.zip \
+    && printf '%s  /run/rustfs.zip\n' "$RUSTFS_SHA256" | sha256sum -c - \
+    && unzip /run/rustfs.zip -d /run/rustfs-release \
+    && install -m 0755 /run/rustfs-release/rustfs /app/code/bin/rustfs \
+    && rm -rf /run/rustfs.zip /run/rustfs-release
+
 COPY LICENSES/Apache-2.0.txt /usr/share/licenses/buzz/LICENSE
+COPY LICENSES/Apache-2.0.txt /usr/share/licenses/rustfs/LICENSE
+COPY CloudronManifest.json /app/code/CloudronManifest.json
 COPY LICENSE /app/code/LICENSE
 COPY THIRD_PARTY_NOTICES.md /app/code/THIRD_PARTY_NOTICES.md
-COPY start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf /app/code/
+COPY start.sh run-minio.sh run-rustfs.sh storage-migrate.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf /app/code/
+
+RUN chmod 0755 /app/code/run-rustfs.sh /app/code/storage-migrate.sh
 
 RUN chmod 0755 /app/code/start.sh /app/code/run-minio.sh /app/code/run-pairing-relay.sh /app/code/run-relay.sh /app/code/buzz-ctl /app/code/bin/buzz-relay /app/code/bin/buzz-admin /app/code/bin/buzz-pair-relay /app/code/bin/silo /app/code/bin/mcli
 

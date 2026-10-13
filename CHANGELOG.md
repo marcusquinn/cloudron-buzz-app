@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+## [0.1.22] - 2026-10-13
+
+### Added
+
+- Checksum-pinned RustFS 1.0.1 as the loopback-only private object store.
+- Automatic S3 copy migration from Silo with matching key, size and count
+  verification, failure fallback and retry, plus `storage-status` and
+  `storage-migrate` administration commands.
+- A transition window of a few releases retaining Silo and legacy objects for
+  downgrade access to pre-migration data. Later removal requires a separate release.
+
 ## [0.1.21] - 2026-10-13
 
 ### Fixed

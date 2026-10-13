@@ -7,7 +7,7 @@ latest package release and its pinned upstream Buzz version.
 
 | Package version | Upstream Buzz | Supported |
 | --- | --- | --- |
-| `0.1.21` | `0.5.23` | Yes |
+| `0.1.22` | `0.5.23` | Yes |
 | Earlier versions | Earlier versions | No |
 
 ## Reporting a vulnerability
@@ -30,10 +30,21 @@ private Nostr keys, private community content, or production data.
 
 Reports may cover the Cloudron packaging, runtime configuration, persistence,
 authentication boundaries, deployment scripts, and interactions with the
-pinned Buzz and PGSTY Silo components. Upstream-only defects may be redirected to
+pinned Buzz, RustFS and PGSTY Silo components. Upstream-only defects may be redirected to
 the relevant upstream security process.
 
 ## Object-storage dependency
+
+RustFS 1.0.1 is the long-term store, checksum-pinned to its official musl release
+asset and licensed Apache-2.0. It binds to `127.0.0.1:9100`, disables the console,
+and reads generated credentials from private files. `mcli anonymous set none`
+enforces the private bucket before the relay starts.
+
+Migration copies over authenticated S3, never opens MinIO data in RustFS, and
+switches only after key/size/count verification. Failure retains Silo and retries
+on restart. Silo and legacy data remain for a few releases, then will be removed.
+Downgrades see only pre-migration objects; use a matching full Cloudron backup
+for complete rollback. No credential values appear in migration status.
 
 The withdrawn MinIO community images are replaced by PGSTY Silo
 `RELEASE.2026-09-16T00-00-00Z`, licensed AGPL-3.0-or-later and pinned to index

@@ -89,7 +89,13 @@ Do not:
 
 - Rebrand Buzz or imply that this package is an official Block distribution.
 - Inject Cloudron-specific CSS or JavaScript into upstream assets.
-- Expose secrets, internal health data, or MinIO controls in a browser view.
+- Expose secrets, internal health data, or RustFS/Silo controls in a browser view.
+
+Storage migration remains a startup and CLI concern, not a visual surface.
+`storage-status` reports the active store and verified migration counts;
+`storage-migrate` retries with the relay quiesced. Silo and legacy data remain
+for a few releases to support fallback and pre-migration rollback, then will
+be removed in a later release. Upstream client interfaces remain unchanged.
 
 ## 9. Responsive Behaviour
 
