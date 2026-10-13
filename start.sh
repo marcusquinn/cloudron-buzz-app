@@ -172,6 +172,7 @@ main() {
 
 	ensure_real_directory "$CONFIG_DIR" 0700 || return 1
 	ensure_real_directory "$MINIO_DATA_DIR" 0750 || return 1
+	ensure_real_directory /app/data/rustfs 0750 || return 1
 	ensure_real_directory "$RUN_DIR" 0750 || return 1
 	ensure_real_directory "${RUN_DIR}/git-repos" 0750 || return 1
 	ensure_real_directory "${RUN_DIR}/git-pack-cache" 0750 || return 1
@@ -187,11 +188,13 @@ main() {
 
 	generate_secret "$MINIO_ACCESS_KEY_FILE" 16 "MinIO access key" || return 1
 	generate_secret "$MINIO_SECRET_KEY_FILE" 32 "MinIO secret key" || return 1
+	generate_secret /app/data/config/rustfs-access-key 16 "RustFS access key" || return 1
+	generate_secret /app/data/config/rustfs-secret-key 32 "RustFS secret key" || return 1
 	generate_secret "$GIT_HOOK_SECRET_FILE" 32 "Git hook HMAC secret" || return 1
 	initialize_relay_identity || return 1
 	initialize_owner || return 1
 
-	chown -hR cloudron:cloudron "$CONFIG_DIR" "$MINIO_DATA_DIR" "$RUN_DIR" /run/minio /run/supervisor
+	chown -hR cloudron:cloudron "$CONFIG_DIR" "$MINIO_DATA_DIR" /app/data/rustfs "$RUN_DIR" /run/minio /run/supervisor
 	chmod 0600 "$MINIO_ACCESS_KEY_FILE" "$MINIO_SECRET_KEY_FILE" "$GIT_HOOK_SECRET_FILE" "$RELAY_PRIVATE_KEY_FILE" "$RELAY_PUBLIC_KEY_FILE" "$OWNER_PUBLIC_KEY_FILE"
 
 	if [[ -L /app/data/.initialized ]]; then

@@ -1,3 +1,9 @@
+[0.1.22]
+* Use checksum-pinned RustFS 1.0.1 for private media and Git object storage.
+* Copy legacy objects over S3 before starting the relay; verify keys, sizes and counts before switching.
+* Retain Silo and legacy data for a few releases, with fallback and retry on migration failure.
+* Add storage-status and storage-migrate operator commands. Downgrades retain only pre-migration objects; restore a matching backup for a complete rollback.
+
 [0.1.21]
 * Restore buildability with digest-pinned PGSTY Silo server and mcli after upstream MinIO community image withdrawal.
 * Retain existing object data, credentials, loopback health routes, and the private buzz-data bucket without migration.

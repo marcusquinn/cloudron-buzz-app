@@ -1,7 +1,21 @@
 # Third-party notices
 
 This package redistributes unmodified binaries and web assets from pinned
-upstream container images.
+upstream container images and release archives.
+
+## RustFS
+
+- Source: <https://github.com/rustfs/rustfs>
+- Release: `1.0.1` (2026-10-03)
+- Asset: `rustfs-linux-x86_64-musl-v1.0.1.zip`
+- SHA-256: `a834096dafa1f1a55825a2cdaf49d006a193978d344f2d508c2be475133738a3`
+- Provenance: checked against the release `SHA256SUMS`; Docker verifies the
+  pinned digest before extracting the unmodified binary. The musl build avoids
+  dependence on the Cloudron base's glibc version.
+- License: Apache License 2.0; bundled in `/usr/share/licenses/rustfs/LICENSE`.
+
+Silo and its legacy data remain for a few releases for migration and rollback
+access to pre-migration objects, with removal in a later release.
 
 ## Buzz
 

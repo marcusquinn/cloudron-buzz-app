@@ -5,7 +5,9 @@
 set -euo pipefail
 
 readonly RUN_DIR="/run/buzz"
-readonly MINIO_ENDPOINT="http://127.0.0.1:9000"
+MINIO_ENDPOINT="http://127.0.0.1:9000"
+STORAGE_READY_PATH="/minio/health/ready"
+STORAGE_CREDENTIAL_PREFIX=minio
 readonly S3_BUCKET="buzz-data"
 readonly FEATURE_ENABLED="true"
 
@@ -50,18 +52,23 @@ ensure_minio_bucket() {
 	local max_attempts=90
 
 	while ((attempt < max_attempts)); do
-		if curl --fail --silent --show-error "${MINIO_ENDPOINT}/minio/health/ready" >/dev/null 2>&1; then
+		if curl --fail --silent --show-error --max-time 2 "${MINIO_ENDPOINT}${STORAGE_READY_PATH}" >/dev/null 2>&1; then
 			break
 		fi
 		((attempt += 1))
 		sleep 1
 	done
 	if ((attempt >= max_attempts)); then
-		fail "Silo did not become ready within ${max_attempts} seconds" || return 1
+		fail "Active object store did not become ready within ${max_attempts} seconds" || return 1
 	fi
 
-	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mcli alias set cloudron "$MINIO_ENDPOINT" "$BUZZ_S3_ACCESS_KEY" "$BUZZ_S3_SECRET_KEY" --api S3v4 >/dev/null 2>&1; then
-		fail "Could not configure the local Silo client" || return 1
+	umask 077
+	if ! jq -n --arg endpoint "$MINIO_ENDPOINT" \
+		--rawfile access "/app/data/config/${STORAGE_CREDENTIAL_PREFIX}-access-key" \
+		--rawfile secret "/app/data/config/${STORAGE_CREDENTIAL_PREFIX}-secret-key" \
+		'{version:"10",aliases:{cloudron:{url:$endpoint,accessKey:($access|rtrimstr("\n")),secretKey:($secret|rtrimstr("\n")),api:"S3v4",path:"auto"}}}' \
+		>"${RUN_DIR}/mc/config.json"; then
+		fail "Could not configure the local object-storage client" || return 1
 	fi
 	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mcli mb --ignore-existing "cloudron/${S3_BUCKET}" >/dev/null 2>&1; then
 		fail "Could not create the private Buzz object-storage bucket" || return 1
@@ -85,6 +92,19 @@ main() {
 	git_hook_secret=$(read_secret /app/data/config/git-hook-hmac-secret "Git hook HMAC secret") || return 1
 	minio_access_key=$(read_secret /app/data/config/minio-access-key "MinIO access key") || return 1
 	minio_secret_key=$(read_secret /app/data/config/minio-secret-key "MinIO secret key") || return 1
+
+	[[ ! -L /run/buzz/storage.json ]] || return 1
+	case "$(jq -er '.active' /run/buzz/storage.json)" in
+	rustfs)
+		MINIO_ENDPOINT="http://127.0.0.1:9100"
+		STORAGE_READY_PATH="/health/ready"
+		STORAGE_CREDENTIAL_PREFIX=rustfs
+		minio_access_key=$(read_secret /app/data/config/rustfs-access-key "RustFS access key") || return 1
+		minio_secret_key=$(read_secret /app/data/config/rustfs-secret-key "RustFS secret key") || return 1
+		;;
+	silo) ;;
+	*) fail "No verified active object store" || return 1 ;;
+	esac
 
 	export DATABASE_URL="${CLOUDRON_POSTGRESQL_URL}"
 	export REDIS_URL="${CLOUDRON_REDIS_URL}"

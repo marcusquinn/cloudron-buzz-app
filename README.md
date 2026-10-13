@@ -59,7 +59,8 @@ This package deploys one private Buzz relay with:
   upstream `desktop-v0.5.23`.
 - Cloudron-managed PostgreSQL for authoritative relational and event state.
 - Cloudron-managed Redis for pub/sub, admission control, and replay protection.
-- A private, loopback-only PGSTY Silo server for durable media and Git packfiles.
+- A private, loopback-only RustFS 1.0.1 server for durable media and Git packfiles,
+  with PGSTY Silo retained temporarily for legacy migration and fallback.
 - Supervisor-managed service lifecycle and a Cloudron readiness check.
 - Stable generated service secrets and a relay identity in `/app/data`.
 
@@ -199,7 +200,7 @@ nginx :3000
    `-- all other routes -> Buzz relay :3001 (loopback)
           |-- PostgreSQL addon        events, memberships, search, metadata
           |-- Redis addon             pub/sub, replay guard, rate limiting
-          |-- Silo :9000 (loopback)   media and immutable Git packfiles
+          |-- RustFS :9100 (loopback) media and immutable Git packfiles
           `-- /run/buzz               disposable Git hydration and pack cache
 ```
 
@@ -215,6 +216,25 @@ Package 0.1.21 replaces the withdrawn MinIO community images with the maintained
 Cloudron backup before any package update. The service/script names and
 `/minio/health/ready` endpoint remain unchanged for compatibility.
 
+### RustFS transition (0.1.22)
+
+Fresh installations run RustFS only at loopback `:9100`, with its console off.
+Upgrades quiesce the relay, start Silo at `:9000`, and copy `buzz-data` over S3
+to `/app/data/rustfs`. Matching object keys, sizes and counts are required before
+switching. `/app/data/config/storage-migration.json` records the outcome and
+package version. Both stores enforce a private bucket; neither is public.
+
+Failed or partial copies leave the relay on Silo and retry at the next start.
+`buzz-ctl storage-migrate` retries manually as root, briefly stopping the relay.
+After success, subsequent starts run RustFS only. Silo and `/app/data/minio`
+remain for a few releases and will be removed in a later release. Budget enough
+disk for both copies. Keep a Cloudron backup before upgrading.
+
+Downgrading to 0.1.21 serves the retained **pre-migration** objects. Writes made
+to RustFS after migration are not copied back to Silo. For a consistent complete
+rollback, restore the matching PostgreSQL and `/app/data` backup together;
+do not delete the migration record or point either store at the other's directory.
+
 ## Security defaults
 
 The package intentionally differs from Buzz development defaults:
@@ -227,7 +247,7 @@ The package intentionally differs from Buzz development defaults:
 - Media reads require signed Blossom authorization and relay membership.
 - Relay identity and generated service secrets remain stable across restores.
 - CORS is restricted to the deployed origin and known Tauri origins.
-- Silo binds only to loopback, has no console, and uses a private bucket.
+- RustFS and legacy Silo bind only to loopback, disable consoles, and use a private bucket.
 - The external Buzz APNs push gateway is disabled.
 - The bundled deployment-admin SPA is intentionally disabled until a separate
   VPN-only or IP-restricted admin hostname is configured.
@@ -253,7 +273,7 @@ Private data remains behind Buzz's protocol-level controls:
   membership.
 - Media reads and uploads require signed Blossom authorization and relay
   membership.
-- The Silo object store is private and is never exposed directly.
+- The active object store is private and is never exposed directly.
 
 Do not add `.htaccess` or blanket HTTP Basic Auth. Cloudron uses nginx rather
 than Apache, and an extra authentication layer can break WebSocket, Git, media,
@@ -350,6 +370,8 @@ Run commands through the Cloudron Web Terminal or `cloudron exec`:
 /app/code/buzz-ctl remove-member "<NPUB_OR_HEX_PUBKEY>"
 /app/code/buzz-ctl list-members
 /app/code/buzz-ctl status
+/app/code/buzz-ctl storage-status
+/app/code/buzz-ctl storage-migrate
 ```
 
 `buzz-ctl` supplies the upstream `buzz-admin` CLI with Cloudron PostgreSQL and
@@ -373,8 +395,10 @@ verifying that public hosts cannot reach it. Until that ingress exists, use
 - **PostgreSQL addon**: authoritative events, channels, memberships, search,
   and Git metadata. Cloudron backs it up.
 - **Redis addon**: non-authoritative pub/sub, replay, and admission state.
-- **`/app/data/minio`**: authoritative media and Git packfiles. Cloudron backs
-  it up with local storage.
+- **`/app/data/rustfs`**: authoritative media and Git packfiles after migration.
+  Cloudron backs it up with local storage.
+- **`/app/data/minio`**: legacy objects retained for fallback and pre-migration
+  rollback during the transition window; also backed up with local storage.
 - **`/app/data/config`**: stable relay identity and generated service secrets.
   Cloudron backs it up with local storage.
 - **`/run/buzz/git-repos`**: disposable hydrated Git workspaces.
@@ -458,7 +482,7 @@ pinned Cloudron base image and prevent mixed-architecture binaries.
 
 ## Licensing
 
-The Cloudron packaging is MIT licensed. Buzz is Apache-2.0 licensed. The PGSTY
+The Cloudron packaging is MIT licensed. Buzz and RustFS are Apache-2.0 licensed. The PGSTY
 Silo server and client are AGPL-3.0-or-later. Exact image versions and notices are in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The built image includes all
 license texts.

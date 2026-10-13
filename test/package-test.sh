@@ -119,7 +119,7 @@ main() {
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.21\" and .upstreamVersion == \"0.5.23\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and (has(\"packageUrl\") | not) and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.22\" and .upstreamVersion == \"0.5.23\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and (has(\"packageUrl\") | not) and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
@@ -129,8 +129,8 @@ main() {
 	jq --exit-status '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
 		fail "Historical catalog entries must remain parseable by Cloudron 9.1 and 9.2" || return 1
 	}
-	assert_contains CHANGELOG '[0.1.21]' || return 1
-	assert_contains CHANGELOG.md '[0.1.21]' || return 1
+	assert_contains CHANGELOG '[0.1.22]' || return 1
+	assert_contains CHANGELOG.md '[0.1.22]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.4"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	pass "Cloudron community publishing baseline"
@@ -147,7 +147,7 @@ main() {
 	assert_contains README.md "[SECURITY.md](SECURITY.md)" || return 1
 	assert_contains CloudronManifest.json "wss://\$CLOUDRON-APP-FQDN" || return 1
 	assert_contains SECURITY.md "GitHub's private vulnerability reporting" || return 1
-	assert_contains SECURITY.md "| \`0.1.21\` | \`0.5.23\` | Yes |" || return 1
+	assert_contains SECURITY.md "| \`0.1.22\` | \`0.5.23\` | Yes |" || return 1
 
 	if git -C "$ROOT_DIR" ls-files -s | grep -Eq '^120000 '; then
 		fail "Published source must not contain tracked symlinks" || return 1
@@ -191,7 +191,7 @@ main() {
 	fi
 	pass "Container provenance pins"
 
-	for shell_script in start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl scripts/publish-cloudron-catalog.sh test/package-test.sh test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh; do
+	for shell_script in start.sh run-minio.sh run-rustfs.sh storage-migrate.sh run-pairing-relay.sh run-relay.sh buzz-ctl scripts/publish-cloudron-catalog.sh test/package-test.sh test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh; do
 		bash -n "${ROOT_DIR}/${shell_script}"
 		shellcheck "${ROOT_DIR}/${shell_script}"
 	done
@@ -215,6 +215,18 @@ main() {
 	assert_contains supervisord.conf '[program:buzz-pairing-relay]' || return 1
 	assert_contains supervisord.conf '[program:nginx]' || return 1
 	pass "Production security defaults"
+	assert_contains Dockerfile 'ARG RUSTFS_SHA256=a834096dafa1f1a55825a2cdaf49d006a193978d344f2d508c2be475133738a3' || return 1
+	assert_contains Dockerfile 'sha256sum -c -' || return 1
+	assert_contains run-rustfs.sh 'RUSTFS_ADDRESS=127.0.0.1:9100' || return 1
+	assert_contains run-rustfs.sh 'RUSTFS_CONSOLE_ENABLE=false' || return 1
+	assert_contains run-rustfs.sh 'RUSTFS_SECRET_KEY_FILE=/app/data/config/rustfs-secret-key' || return 1
+	assert_contains storage-migrate.sh 'mc mirror --overwrite --remove legacy/buzz-data rustfs/buzz-data' || return 1
+	assert_contains storage-migrate.sh "cmp -s \"\$WORK/source.json\" \"\$WORK/destination.json\"" || return 1
+	assert_contains storage-migrate.sh 'record failed silo null null' || return 1
+	assert_contains storage-migrate.sh 'flock -n 9' || return 1
+	assert_contains run-relay.sh 'STORAGE_READY_PATH="/health/ready"' || return 1
+	assert_contains buzz-ctl 'storage-migrate)' || return 1
+	pass "RustFS transition contract"
 
 	if grep -Eq "printf.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)|echo.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)" "${ROOT_DIR}/start.sh" "${ROOT_DIR}/run-minio.sh" "${ROOT_DIR}/run-pairing-relay.sh" "${ROOT_DIR}/run-relay.sh" "${ROOT_DIR}/buzz-ctl"; then
 		fail "A runtime script may print secret material" || return 1

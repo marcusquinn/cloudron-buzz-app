@@ -116,6 +116,9 @@ set_owner() {
 	local previous_owner=""
 	local relay_public_key=""
 
+	# Do not restart the relay while an object migration has quiesced it.
+	exec 8>/run/buzz/storage-migration.lock
+	flock -n 8 || { fail "Storage migration or owner change is in progress" || return 1; }
 	load_admin_environment || return 1
 	previous_owner=$(read_value "$OWNER_FILE" "owner public key") || return 1
 	relay_public_key=$(read_value "$RELAY_PUBLIC_KEY_FILE" "relay public key") || return 1
@@ -161,12 +164,23 @@ list_members() {
 }
 
 status() {
-	/usr/bin/supervisorctl --configuration "$SUPERVISOR_CONFIG" status
+	# Inactive transition services are intentionally STOPPED (supervisor exit 3).
+	/usr/bin/supervisorctl --configuration "$SUPERVISOR_CONFIG" status || true
 	printf "\nRelay readiness:\n"
-	curl --fail --silent --show-error http://127.0.0.1:3000/_readiness
-	printf "\n\nSilo storage readiness:\n"
-	curl --fail --silent --show-error http://127.0.0.1:9000/minio/health/ready
+	curl --fail --silent --show-error --max-time 5 http://127.0.0.1:3000/_readiness || return 1
+	printf "\n\nStorage status:\n"
+	storage_status || return 1
+	case "$(jq -er '.active' /run/buzz/storage.json)" in
+	rustfs) curl --fail --silent --show-error --max-time 5 http://127.0.0.1:9100/health/ready || return 1 ;;
+	silo) curl --fail --silent --show-error --max-time 5 http://127.0.0.1:9000/minio/health/ready || return 1 ;;
+	*) return 1 ;;
+	esac
 	printf "\n"
+	return 0
+}
+
+storage_status() {
+	jq '{active,state,source_count,destination_count,timestamp,package_version}' /app/data/config/storage-migration.json || return 1
 	return 0
 }
 
@@ -180,7 +194,9 @@ usage() {
 		"  add-member <npub-or-hex> [member|admin] Add a relay member" \
 		"  remove-member <npub-or-hex> [role]      Remove a non-owner member" \
 		"  list-members                            List relay members" \
-		"  status                                  Show process and dependency health"
+		"  status                                  Show process and dependency health" \
+		"  storage-status                          Show active store and migration counts" \
+		"  storage-migrate                         Quiesce relay and retry migration (root)"
 	return 0
 }
 
@@ -205,6 +221,8 @@ main() {
 		;;
 	list-members) list_members || return 1 ;;
 	status) status || return 1 ;;
+	storage-status) storage_status || return 1 ;;
+	storage-migrate) /app/code/storage-migrate.sh || return 1 ;;
 	help | --help | -h) usage || return 1 ;;
 	*)
 		usage
