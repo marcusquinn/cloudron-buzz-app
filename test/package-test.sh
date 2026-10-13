@@ -119,7 +119,7 @@ main() {
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.20\" and .upstreamVersion == \"0.5.23\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and (has(\"packageUrl\") | not) and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.21\" and .upstreamVersion == \"0.5.23\" and .minBoxVersion == \"9.1.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and (has(\"packageUrl\") | not) and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
@@ -129,8 +129,8 @@ main() {
 	jq --exit-status '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
 		fail "Historical catalog entries must remain parseable by Cloudron 9.1 and 9.2" || return 1
 	}
-	assert_contains CHANGELOG '[0.1.20]' || return 1
-	assert_contains CHANGELOG.md '[0.1.20]' || return 1
+	assert_contains CHANGELOG '[0.1.21]' || return 1
+	assert_contains CHANGELOG.md '[0.1.21]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.4"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	pass "Cloudron community publishing baseline"
@@ -147,7 +147,7 @@ main() {
 	assert_contains README.md "[SECURITY.md](SECURITY.md)" || return 1
 	assert_contains CloudronManifest.json "wss://\$CLOUDRON-APP-FQDN" || return 1
 	assert_contains SECURITY.md "GitHub's private vulnerability reporting" || return 1
-	assert_contains SECURITY.md "| \`0.1.20\` | \`0.5.23\` | Yes |" || return 1
+	assert_contains SECURITY.md "| \`0.1.21\` | \`0.5.23\` | Yes |" || return 1
 
 	if git -C "$ROOT_DIR" ls-files -s | grep -Eq '^120000 '; then
 		fail "Published source must not contain tracked symlinks" || return 1
@@ -175,8 +175,16 @@ main() {
 	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_AMD64_DIGEST="sha256:4f0688c778d551f118b1b654342e0ae298c23b0748119f075cc13c1e99ba4130"' || return 1
 	assert_contains test/verify-buzz-image.sh "docker buildx imagetools inspect" || return 1
 	assert_contains test/verify-buzz-image.sh 'org.opencontainers.image.revision' || return 1
-	assert_contains Dockerfile "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2" || return 1
-	assert_contains Dockerfile "quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780" || return 1
+	assert_contains Dockerfile "docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46 AS silo" || return 1
+	assert_contains THIRD_PARTY_NOTICES.md "docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46" || return 1
+	assert_contains Dockerfile 'COPY --from=silo /usr/bin/silo /app/code/bin/silo' || return 1
+	assert_contains Dockerfile 'COPY --from=silo /usr/bin/mcli /app/code/bin/mcli' || return 1
+	assert_contains Dockerfile 'COPY --from=silo /licenses/NOTICE /usr/share/licenses/silo/NOTICE' || return 1
+	assert_contains run-minio.sh '/app/code/bin/silo server /app/data/minio --address 127.0.0.1:9000 --console-address 127.0.0.1:9001' || return 1
+	assert_contains run-minio.sh 'export MINIO_BROWSER=off' || return 1
+	assert_contains run-minio.sh 'export MINIO_UPDATE=off' || return 1
+	assert_contains run-relay.sh "MC_CONFIG_DIR=\"\${RUN_DIR}/mc\" /app/code/bin/mcli anonymous set none" || return 1
+	assert_contains buzz-ctl '/minio/health/ready' || return 1
 	assert_contains Dockerfile "cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e" || return 1
 	if grep -Eq "^FROM[[:space:]]+([^[:space:]@-][^[:space:]@]*|--platform=[^[:space:]]+[[:space:]]+[^[:space:]@]+)(:latest)?([[:space:]]|$)" "${ROOT_DIR}/Dockerfile"; then
 		fail "Every Docker stage must be tag-and-digest pinned" || return 1
