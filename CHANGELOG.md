@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade the digest-pinned Cloudron runtime base from 5.1.0 to 6.0.0, retaining
+  the existing Cloudron 9.1.0 minimum and packaged Buzz and Silo versions.
+- The package does not depend on the removed Node, PHP, Apache, pip/venv, or
+  mongosh components; the withdrawn MinIO images were already replaced in 0.1.21.
+
 ## [0.1.21] - 2026-10-13
 
 ### Fixed
