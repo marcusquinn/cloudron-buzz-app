@@ -57,16 +57,16 @@ ensure_minio_bucket() {
 		sleep 1
 	done
 	if ((attempt >= max_attempts)); then
-		fail "MinIO did not become ready within ${max_attempts} seconds" || return 1
+		fail "Silo did not become ready within ${max_attempts} seconds" || return 1
 	fi
 
-	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mc alias set cloudron "$MINIO_ENDPOINT" "$BUZZ_S3_ACCESS_KEY" "$BUZZ_S3_SECRET_KEY" --api S3v4 >/dev/null 2>&1; then
-		fail "Could not configure the local MinIO client" || return 1
+	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mcli alias set cloudron "$MINIO_ENDPOINT" "$BUZZ_S3_ACCESS_KEY" "$BUZZ_S3_SECRET_KEY" --api S3v4 >/dev/null 2>&1; then
+		fail "Could not configure the local Silo client" || return 1
 	fi
-	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mc mb --ignore-existing "cloudron/${S3_BUCKET}" >/dev/null 2>&1; then
+	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mcli mb --ignore-existing "cloudron/${S3_BUCKET}" >/dev/null 2>&1; then
 		fail "Could not create the private Buzz object-storage bucket" || return 1
 	fi
-	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mc anonymous set none "cloudron/${S3_BUCKET}" >/dev/null 2>&1; then
+	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mcli anonymous set none "cloudron/${S3_BUCKET}" >/dev/null 2>&1; then
 		fail "Could not enforce the private Buzz bucket policy" || return 1
 	fi
 	return 0

@@ -56,10 +56,10 @@ The upstream source is available in the
 This package deploys one private Buzz relay with:
 
 - Buzz relay, administration CLI, invite surface, and early Git forge from
-  upstream `desktop-v0.5.8`.
+  upstream `desktop-v0.5.23`.
 - Cloudron-managed PostgreSQL for authoritative relational and event state.
 - Cloudron-managed Redis for pub/sub, admission control, and replay protection.
-- A private, loopback-only MinIO server for durable media and Git packfiles.
+- A private, loopback-only PGSTY Silo server for durable media and Git packfiles.
 - Supervisor-managed service lifecycle and a Cloudron readiness check.
 - Stable generated service secrets and a relay identity in `/app/data`.
 
@@ -199,13 +199,21 @@ nginx :3000
    `-- all other routes -> Buzz relay :3001 (loopback)
           |-- PostgreSQL addon        events, memberships, search, metadata
           |-- Redis addon             pub/sub, replay guard, rate limiting
-          |-- MinIO :9000 (loopback)  media and immutable Git packfiles
+          |-- Silo :9000 (loopback)   media and immutable Git packfiles
           `-- /run/buzz               disposable Git hydration and pack cache
 ```
 
 The object store and PostgreSQL are authoritative. Local Git repositories and
 the pack cache under `/run/buzz` are disposable. Buzz rebuilds them from object
 storage as needed.
+
+Package 0.1.21 replaces the withdrawn MinIO community images with the maintained
+[PGSTY Silo](https://github.com/pgsty/silo) fork, pinned to
+`RELEASE.2026-09-16T00-00-00Z`. Existing `/app/data/minio` objects (including
+`.minio.sys`), the `buzz-data` bucket, and the `minio-access-key` and
+`minio-secret-key` credential files are retained without migration. Keep a
+Cloudron backup before any package update. The service/script names and
+`/minio/health/ready` endpoint remain unchanged for compatibility.
 
 ## Security defaults
 
@@ -219,7 +227,7 @@ The package intentionally differs from Buzz development defaults:
 - Media reads require signed Blossom authorization and relay membership.
 - Relay identity and generated service secrets remain stable across restores.
 - CORS is restricted to the deployed origin and known Tauri origins.
-- MinIO binds only to loopback, has no console, and uses a private bucket.
+- Silo binds only to loopback, has no console, and uses a private bucket.
 - The external Buzz APNs push gateway is disabled.
 - The bundled deployment-admin SPA is intentionally disabled until a separate
   VPN-only or IP-restricted admin hostname is configured.
@@ -245,7 +253,7 @@ Private data remains behind Buzz's protocol-level controls:
   membership.
 - Media reads and uploads require signed Blossom authorization and relay
   membership.
-- The MinIO object store is private and is never exposed directly.
+- The Silo object store is private and is never exposed directly.
 
 Do not add `.htaccess` or blanket HTTP Basic Auth. Cloudron uses nginx rather
 than Apache, and an extra authentication layer can break WebSocket, Git, media,
@@ -416,19 +424,19 @@ entry, and atomically pushes the catalog commit and matching tag. See
 
 ## Version and provenance pins
 
-- **Buzz**: `desktop-v0.5.8`, release commit
-  `f3de860574bb3119018b4592353e9761635aeb07`, image revision
-  `6a17d035f79ad582ca3f4f3cdc38d376f2c4087f`, and image digest
-  `sha256:ce87d6d4ce39cc9e3bd19d356b05179d64a39e30c0d0fe1630b18ab1ed0963b8`.
+- **Buzz**: `desktop-v0.5.23`, release commit
+  `b9392d9d78744df365f9276e1ffe8c1baa5ea903`, image revision
+  `dad5a33865fc81a2e55b3b60746632f615ec1e3a`, and image digest
+  `sha256:c8a9e3f2cbdfb71bb72e1fc2669dd3dad0ca084caa460352fde78ca2af5de9b5`.
   Independent registry inspection confirms its `linux/amd64` child manifest is
-  `sha256:c1010e04273db0ba495b73a74246819f8a22a4e74275618ba47f75ca8c8febd8`.
+  `sha256:4f0688c778d551f118b1b654342e0ae298c23b0748119f075cc13c1e99ba4130`.
   Its OCI revision label matches the image revision, which is the immediate
   ancestor of the release-only tag commit. Re-run the registry and release-tag
   checks with `./test/verify-buzz-image.sh`.
-- **MinIO**: `RELEASE.2025-09-07T16-13-09Z`, image digest
-  `sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2`.
-- **MinIO client**: `RELEASE.2025-08-13T08-35-41Z`, image digest
-  `sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780`.
+- **PGSTY Silo server and mcli**: `RELEASE.2026-09-16T00-00-00Z`, index digest
+  `sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46`.
+  Its `linux/amd64` child manifest is
+  `sha256:39aab3c365848e32aca7b76c5b57f86d1cbca02d7b8f24e1fd1feff9fedddae5`.
 - **Cloudron base**: `5.1.0`, image digest
   `sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e`.
 
@@ -450,8 +458,8 @@ pinned Cloudron base image and prevent mixed-architecture binaries.
 
 ## Licensing
 
-The Cloudron packaging is MIT licensed. Buzz is Apache-2.0 licensed. The MinIO
-server and client are GNU AGPLv3. Exact image versions and notices are in
+The Cloudron packaging is MIT licensed. Buzz is Apache-2.0 licensed. The PGSTY
+Silo server and client are AGPL-3.0-or-later. Exact image versions and notices are in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The built image includes all
 license texts.
 

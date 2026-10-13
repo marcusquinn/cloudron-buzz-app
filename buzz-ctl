@@ -164,7 +164,7 @@ status() {
 	/usr/bin/supervisorctl --configuration "$SUPERVISOR_CONFIG" status
 	printf "\nRelay readiness:\n"
 	curl --fail --silent --show-error http://127.0.0.1:3000/_readiness
-	printf "\n\nMinIO readiness:\n"
+	printf "\n\nSilo storage readiness:\n"
 	curl --fail --silent --show-error http://127.0.0.1:9000/minio/health/ready
 	printf "\n"
 	return 0

@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.1.21] - 2026-10-13
+
+### Fixed
+
+- Restore buildability after upstream MinIO community image withdrawal using
+  digest-pinned PGSTY Silo `RELEASE.2026-09-16T00-00-00Z` and its bundled `mcli`.
+- Retain the existing storage directory, credentials, health routes, and private
+  `buzz-data` bucket without migration; keep the Buzz upstream version unchanged.
+- Bundle Silo's AGPL licence, credits, and notice files and document provenance.
+
 ## [0.1.20] - 2026-09-13
 
 ### Changed

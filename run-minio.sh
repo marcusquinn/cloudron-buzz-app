@@ -24,4 +24,4 @@ export MINIO_BROWSER=off
 export MINIO_UPDATE=off
 export HOME=/run/minio
 
-exec /app/code/bin/minio server /app/data/minio --address 127.0.0.1:9000 --console-address 127.0.0.1:9001
+exec /app/code/bin/silo server /app/data/minio --address 127.0.0.1:9000 --console-address 127.0.0.1:9001
