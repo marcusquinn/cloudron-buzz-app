@@ -7,7 +7,8 @@
 - **Build**: `docker build --tag cloudron-buzz-app:test .`
 - **Test**: `./test/package-test.sh`
 - **Deploy**: `cloudron install --location buzz`
-- **Update**: `cloudron update --app buzz`
+- **Dev rebuild (source install only)**: `cloudron update --app buzz`;
+  catalog installs update from the dashboard
 - **Health**: `cloudron exec --app buzz -- /app/code/buzz-ctl status`
 
 ## Project Overview

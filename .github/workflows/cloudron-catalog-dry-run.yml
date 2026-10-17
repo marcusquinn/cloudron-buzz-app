@@ -1,0 +1,52 @@
+name: Cloudron Catalog Dry Run
+
+# Read-only PR check. Runs the pinned real Cloudron CLI on a scratch copy of the
+# catalog so changelog and file:// errors fail before merge, not in publication.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CLOUDRON_CLI_INTEGRITY: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==
+      CLOUDRON_CLI_VERSION: 8.2.6
+    steps:
+      - name: Check out the pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate package
+        run: ./test/package-test.sh
+
+      - name: Install pinned Cloudron CLI
+        run: |
+          set -euo pipefail
+          registry_integrity="$(npm view "cloudron@${CLOUDRON_CLI_VERSION}" dist.integrity)"
+          test "${registry_integrity}" = "${CLOUDRON_CLI_INTEGRITY}"
+          npm install --global --ignore-scripts "cloudron@${CLOUDRON_CLI_VERSION}"
+          test "$(cloudron --version)" = "${CLOUDRON_CLI_VERSION}"
+
+      - name: Dry-run catalog entry with the real Cloudron CLI
+        run: |
+          set -euo pipefail
+          scratch="${RUNNER_TEMP}/catalog-dry-run"
+          mkdir -p "${scratch}"
+          cp CloudronManifest.json CloudronVersions.json "${scratch}/"
+          jq -r '.. | strings | select(startswith("file://")) | ltrimstr("file://")' CloudronManifest.json |
+            while IFS= read -r referenced; do cp "${referenced}" "${scratch}/"; done
+          cd "${scratch}"
+          version="$(jq -r '.version' CloudronManifest.json)"
+          if jq -e --arg version "${version}" '.versions[$version] != null' CloudronVersions.json >/dev/null; then
+            printf 'Version %s is already published; skipping dry run\n' "${version}"
+            exit 0
+          fi
+          cloudron versions add --state testing --image "registry.invalid/dry-run@sha256:$(printf '0%.0s' $(seq 64))"
+          cloudron versions verify
+          jq -e --arg version "${version}" '.versions[$version].manifest.changelog | length > 0' CloudronVersions.json >/dev/null
