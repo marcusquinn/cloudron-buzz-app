@@ -1,5 +1,16 @@
 # Buzz for Cloudron
 
+<!-- aidevops:badges:start -->
+<!-- managed by aidevops badges; edit the template, not this block -->
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/marcusquinn/cloudron-buzz-app/blob/main/LICENSE)
+[![Latest release](https://img.shields.io/badge/release-latest-blue.svg)](https://github.com/marcusquinn/cloudron-buzz-app/releases/latest)
+
+[![Lines of code](docs/metrics/badges/loc.svg)](docs/metrics/repo-metrics.md)
+[![Dependencies](docs/metrics/badges/dependencies.svg)](docs/metrics/repo-metrics.md)
+
+[![Languages by lines of code](docs/metrics/badges/languages.svg)](docs/metrics/repo-metrics.md)
+<!-- aidevops:badges:end -->
+
 [Cloudron](https://cloudron.io) packaging for [Buzz](https://buzz.xyz), the
 Block open-source, channel-driven workspace for teams of humans and AI agents.
 

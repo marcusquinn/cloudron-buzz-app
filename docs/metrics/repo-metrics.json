@@ -1,7 +1,7 @@
 {
   "schema": "aidevops.repo-metrics.v1",
   "schema_version": 1,
-  "generated_at": "2026-07-22T04:23:02Z",
+  "generated_at": "2026-10-18T16:01:26Z",
   "tool": {
     "name": "aidevops repo-metrics",
     "version": "1.0.0"
@@ -11,62 +11,64 @@
     "slug": "marcusquinn/cloudron-buzz-app"
   },
   "summary": {
-    "source_files": 20,
-    "code": 1097,
-    "comments": 37,
-    "blanks": 306,
+    "source_files": 38,
+    "code": 3595,
+    "comments": 96,
+    "blanks": 582,
     "languages": 5,
     "dependencies": 0
   },
   "languages": [
     {
       "name": "Markdown",
-      "files": 13,
-      "code": 648,
+      "files": 17,
+      "code": 1274,
       "comments": 0,
-      "blanks": 234,
-      "percentage": 59.07,
+      "blanks": 410,
+      "percentage": 35.44,
       "color": "#083fa1"
     },
     {
       "name": "Shell",
-      "files": 4,
-      "code": 371,
-      "comments": 12,
-      "blanks": 59,
-      "percentage": 33.82,
+      "files": 11,
+      "code": 1084,
+      "comments": 45,
+      "blanks": 122,
+      "percentage": 30.15,
       "color": "#89e051"
     },
     {
       "name": "JSON",
-      "files": 1,
-      "code": 33,
+      "files": 3,
+      "code": 906,
       "comments": 0,
       "blanks": 0,
-      "percentage": 3.01,
+      "percentage": 25.2,
       "color": "#292929"
+    },
+    {
+      "name": "YAML",
+      "files": 6,
+      "code": 296,
+      "comments": 46,
+      "blanks": 38,
+      "percentage": 8.23,
+      "color": "#cb171e"
     },
     {
       "name": "Dockerfile",
       "files": 1,
-      "code": 28,
-      "comments": 3,
-      "blanks": 10,
-      "percentage": 2.55,
+      "code": 35,
+      "comments": 5,
+      "blanks": 12,
+      "percentage": 0.97,
       "color": "#384d54"
-    },
-    {
-      "name": "YAML",
-      "files": 1,
-      "code": 17,
-      "comments": 22,
-      "blanks": 3,
-      "percentage": 1.55,
-      "color": "#cb171e"
     }
   ],
   "dependencies": {
     "direct": 0,
+    "runtime": 0,
+    "dev": 0,
     "locked": 0,
     "total": 0,
     "ecosystems": [],
