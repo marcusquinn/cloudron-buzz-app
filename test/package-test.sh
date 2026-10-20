@@ -185,7 +185,7 @@ main() {
 	assert_contains run-minio.sh 'export MINIO_UPDATE=off' || return 1
 	assert_contains run-relay.sh "MC_CONFIG_DIR=\"\${RUN_DIR}/mc\" /app/code/bin/mcli anonymous set none" || return 1
 	assert_contains buzz-ctl '/minio/health/ready' || return 1
-	assert_contains Dockerfile "cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e" || return 1
+	assert_contains Dockerfile "cloudron/base:6.0.0@sha256:9bed4c8fa880645f8e669041ee28febe941481d00e9445e3e5a5483cb541d09b" || return 1
 	if grep -Eq "^FROM[[:space:]]+([^[:space:]@-][^[:space:]@]*|--platform=[^[:space:]]+[[:space:]]+[^[:space:]@]+)(:latest)?([[:space:]]|$)" "${ROOT_DIR}/Dockerfile"; then
 		fail "Every Docker stage must be tag-and-digest pinned" || return 1
 	fi

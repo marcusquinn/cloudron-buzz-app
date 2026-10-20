@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade the runtime to digest-pinned Cloudron base 6.0.0, retaining the
+  existing Cloudron 9.1.0 minimum and exact base-image provenance check.
+
 ## [0.1.22] - 2026-10-13
 
 ### Added
