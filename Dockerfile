@@ -5,7 +5,7 @@
 FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-dad5a33@sha256:c8a9e3f2cbdfb71bb72e1fc2669dd3dad0ca084caa460352fde78ca2af5de9b5 AS buzz
 FROM docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46 AS silo
 
-FROM cloudron/base:6.0.0@sha256:9bed4c8fa880645f8e669041ee28febe941481d00e9445e3e5a5483cb541d09b
+FROM cloudron/base:6.0.1@sha256:7b1e729960c3ca312d26e886917ba89483241bba0219ff292858e10d9d5768ee
 
 LABEL org.opencontainers.image.title="Buzz for Cloudron"
 LABEL org.opencontainers.image.description="Cloudron package for the Buzz human-agent collaboration workspace"
