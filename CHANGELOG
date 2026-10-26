@@ -1,3 +1,6 @@
+[0.1.23]
+* Security update: move to the digest-pinned Cloudron base image 6.0.1 with its patched CA bundle and shared MIME data. Buzz stays at 0.5.23.
+
 [0.1.22]
 * Use checksum-pinned RustFS 1.0.1 for private media and Git object storage.
 * Copy legacy objects over S3 before starting the relay; verify keys, sizes and counts before switching.

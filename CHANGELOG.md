@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.23] - 2026-10-27
+
 ### Changed
 
 - Upgrade the runtime to digest-pinned Cloudron base 6.0.1 with the patched CA
