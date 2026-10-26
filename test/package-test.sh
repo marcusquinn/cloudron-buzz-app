@@ -64,47 +64,25 @@ check_release_workflows() {
 	assert_contains .github/workflows/cloudron-package-release.yml "- 'v*'" || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml "uses: marcusquinn/aidevops/.github/workflows/cloudron-package-release-reusable.yml@22a6b4b29087ce2fcf3857596a40ff7b2c436482" || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml "aidevops_ref: 22a6b4b29087ce2fcf3857596a40ff7b2c436482" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "branches:" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "- main" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "branches: [main]" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "pull_request:" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "attestations: write" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "id-token: write" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "packages: write" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "pull-requests: read" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "github.ref == 'refs/heads/main'" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "persist-credentials: false" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "GH_TOKEN: \${{ secrets.CLOUDRON_RELEASE_PAT }}" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "CLOUDRON_RELEASE_PAT is not configured for this repository" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "CLOUDRON_CLI_INTEGRITY: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "cloudron@\${CLOUDRON_CLI_VERSION}" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'author_association == "OWNER"' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "./scripts/publish-cloudron-catalog.sh \"\$IMAGE_REF\"" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "./test/pairing-proxy-test.sh \"\$image_tag\"" || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml "./test/pairing-proxy-test.sh \"\$image_tag\"" "docker push \"\$image_tag\"" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "subject-name: \${{ env.IMAGE_REPOSITORY }}" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "subject-digest: \${{ steps.image.outputs.digest }}" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "push-to-registry: true" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "subject-path: CloudronVersions.json" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "ATTESTATION_BUNDLE: \${{ steps.image-attestation.outputs.bundle-path }}" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "ATTESTATION_BUNDLE: \${{ steps.catalog-attestation.outputs.bundle-path }}" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "gh attestation verify \"oci://\${IMAGE_REPOSITORY}@\${IMAGE_DIGEST}\"" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "gh attestation verify CloudronVersions.json" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "--repo marcusquinn/cloudron-buzz-app" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "--signer-workflow marcusquinn/cloudron-buzz-app/.github/workflows/cloudron-catalog-publish.yml" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "--source-ref refs/heads/main" || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml "Generate and validate the published catalog entry" "Attest Cloudron catalog provenance" || return 1
-	if grep -A 4 -F -- "- name: Attest Cloudron catalog provenance" "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml" | grep -Fq "if:"; then
-		fail "Catalog attestation must run when publication is already complete" || return 1
-	fi
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "gh auth setup-git" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "chore(release): publish Buzz catalog \${VERSION} [skip ci]" || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml "git add CloudronVersions.json" "gh auth setup-git" || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml "gh auth setup-git" "git push --atomic" || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml "git push --atomic" "- name: Create GitHub release" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'git push --atomic' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'gh release create' || return 1
-	[[ "$(grep -Fc 'secrets.CLOUDRON_RELEASE_PAT' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 1 ]] || fail "Release PAT must be exposed to exactly one publication step" || return 1
+	# Publication and attestation internals belong to the pinned reusable workflow.
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "uses: marcusquinn/aidevops/.github/workflows/cloudron-catalog-publish-reusable.yml@4366037537f8a9aaf7f738a37465a6b1433dd6d5" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "aidevops_ref: 4366037537f8a9aaf7f738a37465a6b1433dd6d5" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "image_repository: ghcr.io/marcusquinn/cloudron-buzz-app" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "cli_version: '8.2.6'" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "cli_integrity: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "CLOUDRON_RELEASE_PAT: \${{ secrets.CLOUDRON_RELEASE_PAT }}" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "package_checks: |" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "./test/package-test.sh" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml './test/verify-buzz-image.sh' || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "docker build --platform linux/amd64 --tag cloudron-buzz-app:test ." || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "./test/pairing-proxy-test.sh cloudron-buzz-app:test" || return 1
+	assert_precedes .github/workflows/cloudron-catalog-publish.yml "docker build --platform" "./test/pairing-proxy-test.sh" || return 1
+	[[ "$(grep -Fc 'secrets.CLOUDRON_RELEASE_PAT' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 1 ]] || fail "Release PAT must be forwarded exactly once to the reusable publisher" || return 1
 	assert_contains scripts/publish-cloudron-catalog.sh "cloudron versions add --image \"\$image_ref\" --state testing" || return 1
 	assert_contains scripts/publish-cloudron-catalog.sh "cloudron versions update --image \"\$image_ref\" --version \"\$package_version\" --state published" || return 1
 	pass "Managed release workflow and private-community onboarding"
