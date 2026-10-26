@@ -27,8 +27,8 @@ jobs:
       cli_integrity: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==
       package_checks: |
         ./test/package-test.sh
-        # The preflight token is read-only; no publication credential is used.
-        GH_TOKEN="${{ github.token }}" ./test/verify-buzz-image.sh
+        # Public upstream metadata verification needs no publication credential.
+        ./test/verify-buzz-image.sh
         # Preserve the package-specific runtime check before any publication.
         docker build --platform linux/amd64 --tag cloudron-buzz-app:test .
         ./test/pairing-proxy-test.sh cloudron-buzz-app:test

@@ -11,6 +11,20 @@ readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-dad5a33"
 readonly BUZZ_INDEX_DIGEST="sha256:c8a9e3f2cbdfb71bb72e1fc2669dd3dad0ca084caa460352fde78ca2af5de9b5"
 readonly BUZZ_AMD64_DIGEST="sha256:4f0688c778d551f118b1b654342e0ae298c23b0748119f075cc13c1e99ba4130"
 
+github_api() {
+	local endpoint="$1"
+	# Reusable preflight runs without tokens. These are public upstream reads,
+	# with the same pinned revision and ancestry validation on either path.
+	if [[ -n "${GH_TOKEN:-}${GITHUB_TOKEN:-}" ]]; then
+		gh api "repos/block/buzz/${endpoint}" || return 1
+	else
+		curl --fail --silent --show-error --retry 3 \
+			--header 'Accept: application/vnd.github+json' \
+			"https://api.github.com/repos/block/buzz/${endpoint}" || return 1
+	fi
+	return 0
+}
+
 main() {
 	local image_metadata=""
 	local release_object=""
@@ -20,7 +34,7 @@ main() {
 	local release_tag_depth=0
 	local ancestry_metadata=""
 
-	for command_name in docker gh jq; do
+	for command_name in docker gh jq curl; do
 		if ! command -v "$command_name" >/dev/null; then
 			printf "Missing required command: %s\n" "$command_name" >&2
 			return 1
@@ -40,7 +54,7 @@ main() {
 		return 1
 	}
 
-	release_object=$(gh api "repos/block/buzz/git/ref/tags/${BUZZ_RELEASE}") || return 1
+	release_object=$(github_api "git/ref/tags/${BUZZ_RELEASE}") || return 1
 	release_object_sha=$(jq --raw-output '.object.sha' <<<"$release_object") || return 1
 	release_object_type=$(jq --raw-output '.object.type' <<<"$release_object") || return 1
 	while [[ "$release_object_type" == "tag" ]]; do
@@ -49,7 +63,7 @@ main() {
 			printf "Buzz release %s exceeds the annotated-tag resolution limit\n" "$BUZZ_RELEASE" >&2
 			return 1
 		fi
-		release_object=$(gh api "repos/block/buzz/git/tags/${release_object_sha}") || return 1
+		release_object=$(github_api "git/tags/${release_object_sha}") || return 1
 		release_object_sha=$(jq --raw-output '.object.sha' <<<"$release_object") || return 1
 		release_object_type=$(jq --raw-output '.object.type' <<<"$release_object") || return 1
 	done
@@ -62,7 +76,7 @@ main() {
 		printf "Buzz release %s resolves to unexpected revision %s\n" "$BUZZ_RELEASE" "$release_revision" >&2
 		return 1
 	fi
-	ancestry_metadata=$(gh api "repos/block/buzz/compare/${BUZZ_REVISION}...${BUZZ_RELEASE_REVISION}") || return 1
+	ancestry_metadata=$(github_api "compare/${BUZZ_REVISION}...${BUZZ_RELEASE_REVISION}") || return 1
 	jq --exit-status '.status == "ahead" and .ahead_by == 1 and .behind_by == 0' \
 		<<<"$ancestry_metadata" >/dev/null || {
 		printf "Buzz image revision is not the immediate ancestor of release %s\n" "$BUZZ_RELEASE" >&2
