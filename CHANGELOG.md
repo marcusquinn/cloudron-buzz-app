@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.1.24] - 2026-11-01
+
+### Changed
+
+- Set `packageUrl` so the Community Apps Package button opens this repository;
+  `packagerUrl` still links the maintainer (issue #108).
+- Require Cloudron 10.0.0 (`minBoxVersion`). Cloudron 9 rejects `packageUrl`
+  anywhere in `CloudronVersions.json`, so 9.x servers can no longer read this
+  catalog. Buzz stays at 0.5.23; no app change.
+
 ## [0.1.23] - 2026-10-27
 
 ### Changed

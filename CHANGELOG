@@ -1,3 +1,8 @@
+[0.1.24]
+* Link the Community Apps Package button to this package's repository.
+* Requires Cloudron 10.0.0 or later; Cloudron 9 servers can no longer read this catalog.
+* No change to the app; Buzz stays at 0.5.23.
+
 [0.1.23]
 * Security update: move to the digest-pinned Cloudron base image 6.0.1 with its patched CA bundle and shared MIME data. Buzz stays at 0.5.23.
 

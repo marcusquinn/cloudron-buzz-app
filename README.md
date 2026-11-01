@@ -294,7 +294,7 @@ client flow.
 
 ## Requirements
 
-- Cloudron `9.1.0` or newer.
+- Cloudron `10.0.0` or newer.
 - 1 GiB memory by default. Increase this for heavy Git or media activity.
 - Cloudron local-storage, PostgreSQL, and Redis addons.
 - A Buzz desktop or mobile client for full chat and agent workflows.
