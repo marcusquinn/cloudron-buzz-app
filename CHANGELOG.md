@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.1.25] - 2026-11-02
+
+### Changed
+
+- Set `packagerUrl` to this repository so the Community Apps Package link opens it.
+  ca.cloudron.io builds the Package link (and the "By" link) from `packagerUrl`
+  and ignores `packageUrl`, so the 0.1.24 change had no visible effect
+  (marcusquinn/aidevops#36428). `packageUrl` and `minBoxVersion` 10.0.0 are unchanged.
+- No change to the app; Buzz stays at 0.5.23.
+
 ## [0.1.24] - 2026-11-01
 
 ### Changed
