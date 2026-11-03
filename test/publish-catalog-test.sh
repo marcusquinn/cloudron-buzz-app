@@ -8,6 +8,9 @@ TEST_DIR=""
 TEST_DIR=$(cd "${BASH_SOURCE[0]%/*}" && pwd)
 readonly TEST_DIR
 readonly PUBLISHER="${TEST_DIR%/*}/scripts/publish-cloudron-catalog.sh"
+readonly PACKAGE_VERSION="1.2.3"
+readonly HISTORICAL_VERSION="1.2.2"
+readonly PUBLISHED_STATE="published"
 TEST_ROOT=""
 PASSED=0
 FAILED=0
@@ -91,11 +94,11 @@ FAKE
 write_fixture() {
 	local fixture_dir="$1"
 	mkdir -p "${fixture_dir}/test"
-	cat >"${fixture_dir}/CloudronManifest.json" <<'JSON'
+	cat >"${fixture_dir}/CloudronManifest.json" <<JSON
 {
   "id": "example.test",
   "title": "Example",
-  "version": "1.2.3",
+  "version": "${PACKAGE_VERSION}",
   "upstreamVersion": "4.5.6",
   "manifestVersion": 2
 }
@@ -107,6 +110,13 @@ JSON
 }
 JSON
 	: >"${fixture_dir}/test/published-catalog-manifests.sha256"
+	return 0
+}
+
+catalog_manifest_digest() {
+	local catalog_path="$1"
+
+	jq -cS --arg published_state "$PUBLISHED_STATE" '[.versions | to_entries[] | select(.value.publishState == $published_state) | {version: .key, manifest: .value.manifest}] | sort_by(.version)' "$catalog_path" | shasum -a 256 | cut -d ' ' -f1
 	return 0
 }
 
@@ -122,15 +132,41 @@ test_valid_publication() {
 		fail "immutable image is published"
 		return 0
 	fi
-	if jq --exit-status --arg image "$image_ref" '.versions["1.2.3"].publishState == "published" and .versions["1.2.3"].manifest.dockerImage == $image' "${fixture_dir}/CloudronVersions.json" >/dev/null; then
+	if jq --exit-status --arg image "$image_ref" --arg version "$PACKAGE_VERSION" --arg published_state "$PUBLISHED_STATE" '.versions[$version].publishState == $published_state and .versions[$version].manifest.dockerImage == $image' "${fixture_dir}/CloudronVersions.json" >/dev/null; then
 		pass "published entry preserves the exact digest reference"
 	else
 		fail "published entry preserves the exact digest reference"
 	fi
-	if [[ "$(tr -d '[:space:]' < "${fixture_dir}/test/published-catalog-manifests.sha256")" =~ ^[0-9a-f]{64}$ ]]; then
+	if [[ "$(tr -d '[:space:]' < "${fixture_dir}/test/published-catalog-manifests.sha256")" == "$(catalog_manifest_digest "${fixture_dir}/CloudronVersions.json")" ]]; then
 		pass "published catalog manifest baseline is refreshed"
 	else
 		fail "published catalog manifest baseline is refreshed"
+	fi
+	return 0
+}
+
+test_historical_manifest_change_rejected() {
+	local fixture_dir="${TEST_ROOT}/historical"
+	local bin_dir="${TEST_ROOT}/bin"
+	local baseline_before=""
+
+	write_fixture "$fixture_dir"
+	write_fake_cloudron "$bin_dir"
+	jq --arg version "$HISTORICAL_VERSION" --arg published_state "$PUBLISHED_STATE" '.versions[$version] = {publishState: $published_state, manifest: {version: $version, dockerImage: "ghcr.io/example/package@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}}' "${fixture_dir}/CloudronVersions.json" >"${fixture_dir}/catalog.json"
+	mv "${fixture_dir}/catalog.json" "${fixture_dir}/CloudronVersions.json"
+	catalog_manifest_digest "${fixture_dir}/CloudronVersions.json" >"${fixture_dir}/test/published-catalog-manifests.sha256"
+	jq --arg version "$HISTORICAL_VERSION" '.versions[$version].manifest.dockerImage = "ghcr.io/example/package@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"' "${fixture_dir}/CloudronVersions.json" >"${fixture_dir}/catalog.json"
+	mv "${fixture_dir}/catalog.json" "${fixture_dir}/CloudronVersions.json"
+	baseline_before=$(cksum "${fixture_dir}/test/published-catalog-manifests.sha256")
+	if CLOUDRON_PACKAGE_ROOT="$fixture_dir" PATH="${bin_dir}:$PATH" "$PUBLISHER" "ghcr.io/example/package@sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" >/dev/null 2>&1; then
+		fail "historical published manifest change is rejected"
+	else
+		pass "historical published manifest change is rejected"
+	fi
+	if [[ "$baseline_before" == "$(cksum "${fixture_dir}/test/published-catalog-manifests.sha256")" ]]; then
+		pass "rejected publication does not refresh the baseline"
+	else
+		fail "rejected publication does not refresh the baseline"
 	fi
 	return 0
 }
@@ -154,7 +190,7 @@ test_existing_version_rejected() {
 	local before=""
 	write_fixture "$fixture_dir"
 	write_fake_cloudron "$bin_dir"
-	jq '.versions["1.2.3"] = {publishState: "published"}' "${fixture_dir}/CloudronVersions.json" >"${fixture_dir}/existing.json"
+	jq --arg version "$PACKAGE_VERSION" --arg published_state "$PUBLISHED_STATE" '.versions[$version] = {publishState: $published_state}' "${fixture_dir}/CloudronVersions.json" >"${fixture_dir}/existing.json"
 	mv "${fixture_dir}/existing.json" "${fixture_dir}/CloudronVersions.json"
 	before=$(cksum "${fixture_dir}/CloudronVersions.json")
 	if CLOUDRON_PACKAGE_ROOT="$fixture_dir" PATH="${bin_dir}:$PATH" "$PUBLISHER" "ghcr.io/example/package@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" >/dev/null 2>&1; then
@@ -194,6 +230,7 @@ main() {
 	TEST_ROOT=$(mktemp -d)
 	trap cleanup EXIT
 	test_valid_publication
+	test_historical_manifest_change_rejected
 	test_mutable_reference_rejected
 	test_existing_version_rejected
 	test_invalid_cli_output_rolls_back

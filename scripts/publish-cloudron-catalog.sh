@@ -12,6 +12,7 @@ readonly ROOT_DIR
 readonly CATALOG_PATH="${ROOT_DIR}/CloudronVersions.json"
 readonly MANIFEST_PATH="${ROOT_DIR}/CloudronManifest.json"
 readonly CATALOG_BASELINE_PATH="${ROOT_DIR}/test/published-catalog-manifests.sha256"
+readonly PUBLISHED_STATE="published"
 CATALOG_BACKUP=""
 CATALOG_COMMITTED=false
 
@@ -25,7 +26,7 @@ write_catalog_manifest_baseline() {
 	local baseline_temp=""
 
 	baseline_temp=$(mktemp "${CATALOG_BASELINE_PATH}.XXXXXX")
-	jq -cS '[.versions | to_entries[] | select(.value.publishState == "published") | {version: .key, manifest: .value.manifest}]' "$CATALOG_PATH" | shasum -a 256 | cut -d ' ' -f1 >"$baseline_temp" || {
+	catalog_manifest_digest >"$baseline_temp" || {
 		rm -f "$baseline_temp"
 		return 1
 	}
@@ -33,6 +34,28 @@ write_catalog_manifest_baseline() {
 		rm -f "$baseline_temp"
 		return 1
 	}
+	return 0
+}
+
+catalog_manifest_digest() {
+	jq -cS --arg published_state "$PUBLISHED_STATE" '[.versions | to_entries[] | select(.value.publishState == $published_state) | {version: .key, manifest: .value.manifest}] | sort_by(.version)' "$CATALOG_PATH" | shasum -a 256 | cut -d ' ' -f1
+	return 0
+}
+
+assert_catalog_manifest_baseline() {
+	local expected_digest=""
+	local actual_digest=""
+	local published_entries=""
+
+	expected_digest=$(tr -d '[:space:]' < "$CATALOG_BASELINE_PATH")
+	if [[ -z "$expected_digest" ]]; then
+		published_entries=$(jq --arg published_state "$PUBLISHED_STATE" '[.versions | to_entries[] | select(.value.publishState == $published_state)] | length' "$CATALOG_PATH")
+		[[ "$published_entries" -eq 0 ]] || fail "Published catalog manifest baseline is missing" || return 1
+		return 0
+	fi
+	[[ "$expected_digest" =~ ^[0-9a-f]{64}$ ]] || fail "Published catalog manifest baseline must contain one SHA-256 digest" || return 1
+	actual_digest=$(catalog_manifest_digest)
+	[[ "$actual_digest" == "$expected_digest" ]] || fail "Published catalog manifests changed; add a new version instead of mutating a published entry" || return 1
 	return 0
 }
 
@@ -67,6 +90,7 @@ main() {
 	[[ -f "$MANIFEST_PATH" ]] || fail "CloudronManifest.json is missing" || return 1
 	[[ -f "$CATALOG_PATH" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "$CATALOG_BASELINE_PATH" ]] || fail "Published catalog manifest baseline is missing" || return 1
+	assert_catalog_manifest_baseline || return 1
 	if [[ ! "$image_ref" =~ ^[a-zA-Z0-9._/:@-]+@sha256:[0-9a-f]{64}$ ]]; then
 		fail "Image must be an immutable registry reference ending in @sha256:<64 lowercase hex characters>" || return 1
 	fi
@@ -92,10 +116,10 @@ main() {
 	}
 
 	cloudron versions update --image "$image_ref" --version "$package_version" --state published || return 1
-	jq --exit-status --arg version "$package_version" --arg image "$image_ref" '
+	jq --exit-status --arg version "$package_version" --arg image "$image_ref" --arg published_state "$PUBLISHED_STATE" '
 		.versions[$version].manifest.version == $version and
 		.versions[$version].manifest.dockerImage == $image and
-		.versions[$version].publishState == "published"
+		.versions[$version].publishState == $published_state
 	' "$CATALOG_PATH" >/dev/null || {
 		fail "Cloudron CLI did not promote the expected immutable entry" || return 1
 	}

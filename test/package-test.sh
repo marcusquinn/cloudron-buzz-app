@@ -51,7 +51,7 @@ assert_precedes() {
 }
 
 catalog_manifest_digest() {
-	jq -cS '[.versions | to_entries[] | select(.value.publishState == "published") | {version: .key, manifest: .value.manifest}]' "${ROOT_DIR}/CloudronVersions.json" | shasum -a 256 | cut -d ' ' -f1
+	jq -cS '[.versions | to_entries[] | select(.value.publishState == "published") | {version: .key, manifest: .value.manifest}] | sort_by(.version)' "${ROOT_DIR}/CloudronVersions.json" | shasum -a 256 | cut -d ' ' -f1
 	return 0
 }
 
