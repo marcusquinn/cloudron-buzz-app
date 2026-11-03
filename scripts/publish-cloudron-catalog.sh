@@ -11,6 +11,7 @@ ROOT_DIR="${CLOUDRON_PACKAGE_ROOT:-${SCRIPT_DIR%/*}}"
 readonly ROOT_DIR
 readonly CATALOG_PATH="${ROOT_DIR}/CloudronVersions.json"
 readonly MANIFEST_PATH="${ROOT_DIR}/CloudronManifest.json"
+readonly CATALOG_BASELINE_PATH="${ROOT_DIR}/test/published-catalog-manifests.sha256"
 CATALOG_BACKUP=""
 CATALOG_COMMITTED=false
 
@@ -18,6 +19,21 @@ fail() {
 	local message="$1"
 	printf "ERROR: %s\n" "$message" >&2
 	return 1
+}
+
+write_catalog_manifest_baseline() {
+	local baseline_temp=""
+
+	baseline_temp=$(mktemp "${CATALOG_BASELINE_PATH}.XXXXXX")
+	jq -cS '[.versions | to_entries[] | select(.value.publishState == "published") | {version: .key, manifest: .value.manifest}]' "$CATALOG_PATH" | shasum -a 256 | cut -d ' ' -f1 >"$baseline_temp" || {
+		rm -f "$baseline_temp"
+		return 1
+	}
+	mv "$baseline_temp" "$CATALOG_BASELINE_PATH" || {
+		rm -f "$baseline_temp"
+		return 1
+	}
+	return 0
 }
 
 require_command() {
@@ -45,11 +61,12 @@ main() {
 	local image_ref="${1:-}"
 	local package_version=""
 
-	for command_name in cloudron jq; do
+	for command_name in cloudron jq shasum; do
 		require_command "$command_name" || return 1
 	done
 	[[ -f "$MANIFEST_PATH" ]] || fail "CloudronManifest.json is missing" || return 1
 	[[ -f "$CATALOG_PATH" ]] || fail "CloudronVersions.json is missing" || return 1
+	[[ -f "$CATALOG_BASELINE_PATH" ]] || fail "Published catalog manifest baseline is missing" || return 1
 	if [[ ! "$image_ref" =~ ^[a-zA-Z0-9._/:@-]+@sha256:[0-9a-f]{64}$ ]]; then
 		fail "Image must be an immutable registry reference ending in @sha256:<64 lowercase hex characters>" || return 1
 	fi
@@ -81,6 +98,9 @@ main() {
 		.versions[$version].publishState == "published"
 	' "$CATALOG_PATH" >/dev/null || {
 		fail "Cloudron CLI did not promote the expected immutable entry" || return 1
+	}
+	write_catalog_manifest_baseline || {
+		fail "Could not update the published catalog manifest baseline" || return 1
 	}
 
 	CATALOG_COMMITTED=true

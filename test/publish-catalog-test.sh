@@ -90,7 +90,7 @@ FAKE
 
 write_fixture() {
 	local fixture_dir="$1"
-	mkdir -p "$fixture_dir"
+	mkdir -p "${fixture_dir}/test"
 	cat >"${fixture_dir}/CloudronManifest.json" <<'JSON'
 {
   "id": "example.test",
@@ -106,6 +106,7 @@ JSON
   "versions": {}
 }
 JSON
+	: >"${fixture_dir}/test/published-catalog-manifests.sha256"
 	return 0
 }
 
@@ -125,6 +126,11 @@ test_valid_publication() {
 		pass "published entry preserves the exact digest reference"
 	else
 		fail "published entry preserves the exact digest reference"
+	fi
+	if [[ "$(tr -d '[:space:]' < "${fixture_dir}/test/published-catalog-manifests.sha256")" =~ ^[0-9a-f]{64}$ ]]; then
+		pass "published catalog manifest baseline is refreshed"
+	else
+		fail "published catalog manifest baseline is refreshed"
 	fi
 	return 0
 }

@@ -50,6 +50,22 @@ assert_precedes() {
 	return 0
 }
 
+catalog_manifest_digest() {
+	jq -cS '[.versions | to_entries[] | select(.value.publishState == "published") | {version: .key, manifest: .value.manifest}]' "${ROOT_DIR}/CloudronVersions.json" | shasum -a 256 | cut -d ' ' -f1
+	return 0
+}
+
+assert_published_catalog_baseline() {
+	local expected_digest=""
+	local actual_digest=""
+
+	expected_digest=$(tr -d '[:space:]' < "${ROOT_DIR}/test/published-catalog-manifests.sha256")
+	[[ "$expected_digest" =~ ^[0-9a-f]{64}$ ]] || fail "Published catalog manifest baseline must contain one SHA-256 digest" || return 1
+	actual_digest=$(catalog_manifest_digest)
+	[[ "$actual_digest" == "$expected_digest" ]] || fail "Published catalog manifests changed; add a new version instead of mutating a published entry" || return 1
+	return 0
+}
+
 check_release_workflows() {
 	assert_contains .agents/AGENTS.md 'wss://<app-host>' || return 1
 	assert_contains .agents/AGENTS.md "public \`npub\` or hexadecimal public key" || return 1
@@ -93,7 +109,7 @@ main() {
 	local required_file=""
 	local shell_script=""
 
-	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
+	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/published-catalog-manifests.sha256 test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
 		assert_file "$required_file" || return 1
 	done
 
@@ -111,6 +127,7 @@ main() {
 	assert_contains CHANGELOG.md '[0.1.25]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.4"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
+	assert_published_catalog_baseline || return 1
 	pass "Cloudron community publishing baseline"
 	assert_contains CloudronManifest.json "Join a community" || return 1
 	assert_contains CloudronManifest.json "hosted Builderlab workflow" || return 1
