@@ -57,12 +57,28 @@ catalog_manifest_digest() {
 	return 0
 }
 
+# An unrecorded current-version entry must be exactly what the publisher builds:
+# the source manifest, its CHANGELOG section, and an immutable package image.
+assert_current_catalog_entry() {
+	local version="$1"
+	local changelog_section=""
+
+	changelog_section=$(awk -v header="[${version}]" '$0 == header {found=1; next} found && /^$/ {exit} found {print}' "${ROOT_DIR}/CHANGELOG")
+	jq -e --arg version "$version" --arg changelog "${changelog_section}"$'\n' --slurpfile source "${ROOT_DIR}/CloudronManifest.json" '
+		.versions[$version].manifest as $entry
+		| ($entry.dockerImage | test("^ghcr\\.io/marcusquinn/cloudron-buzz-app@sha256:[0-9a-f]{64}$"))
+		and $entry.changelog == $changelog
+		and ($entry | del(.dockerImage, .changelog)) == ($source[0] | del(.changelog))
+	' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Unrecorded catalog entry ${version} does not match CloudronManifest.json, CHANGELOG and an immutable package image" || return 1
+	return 0
+}
+
 # Published catalog entries are append-only. The baseline holds one
 # "<version> <sha256 of the canonical manifest>" line per published version and
 # is checked against the checked-out tree, not the merge base. The managed
 # publisher appends the current manifest version to the catalog on main without
-# touching this file, so only that version may be unrecorded; the next package
-# release PR must record it.
+# touching this file, so only that version may be unrecorded, and it must match
+# the source manifest; the next package release PR must record it.
 assert_published_catalog_baseline() {
 	local baseline="${ROOT_DIR}/${CATALOG_BASELINE}"
 	local catalog="${ROOT_DIR}/CloudronVersions.json"
@@ -83,7 +99,10 @@ assert_published_catalog_baseline() {
 	done <"$baseline"
 	current_version=$(jq -r '.version' "${ROOT_DIR}/CloudronManifest.json")
 	while read -r version; do
-		[[ "$version" != "$current_version" ]] || continue
+		if [[ "$version" == "$current_version" ]]; then
+			grep -q "^${version//./\\.} " "$baseline" || assert_current_catalog_entry "$version" || return 1
+			continue
+		fi
 		grep -q "^${version//./\\.} " "$baseline" || missing="${missing}${version} $(catalog_manifest_digest "$version")"$'\n'
 	done < <(jq -r '.versions | to_entries[] | select(.value.publishState == "published") | .key' "$catalog")
 	if [[ -n "$missing" ]]; then
