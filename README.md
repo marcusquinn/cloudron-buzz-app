@@ -236,8 +236,9 @@ Installs whose state is `migrated` or `not-needed` update cleanly. Fresh
 installations record `not-needed`.
 
 If legacy objects exist and were never migrated (no record, or a `failed`
-record), 0.1.27 does not start the relay. Starting with incomplete media and
-Git data could look like data loss. The app log shows the reason and the recovery
+record), or the storage record cannot be read, 0.1.27 does not start the relay.
+Starting with incomplete media and Git data could look like data loss. The app
+log shows the reason and the recovery
 steps. Cloudron cannot require an intermediate package version, so recover as
 follows:
 
@@ -255,7 +256,8 @@ the retained pre-migration copy for rollback, remove it as root:
 ```
 
 The purge also deletes the unused `minio-access-key` and `minio-secret-key`
-files. It runs only when storage state is `migrated` or `not-needed`. Once
+files, including on a confirmed rerun after the directory is already gone. It
+runs only when storage state is `migrated` or `not-needed`. Once
 the legacy directory is deleted, the only way back to a pre-0.1.22 package is a
 full matching Cloudron backup restore.
 

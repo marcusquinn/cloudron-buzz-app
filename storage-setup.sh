@@ -75,12 +75,24 @@ has_legacy_objects() {
 	return $?
 }
 
+print_recovery() {
+	printf 'ERROR: Recovery: restore the backup taken before this update, update to package %s (the last release with Silo),\n' "$LAST_DUAL_STORE_RELEASE" >&2
+	printf 'ERROR: confirm that "buzz-ctl storage-status" reports state "migrated", then update to this release again.\n' >&2
+	return 0
+}
+
 refuse_unmigrated() {
 	local state="$1"
 	printf 'ERROR: Legacy Silo/MinIO objects in %s were never migrated to RustFS (storage state: %s).\n' "$LEGACY_DIR" "$state" >&2
 	printf 'ERROR: This release no longer includes Silo, so the relay will not start with incomplete media and Git data.\n' >&2
-	printf 'ERROR: Recovery: restore the backup taken before this update, update to package %s (the last release with Silo),\n' "$LAST_DUAL_STORE_RELEASE" >&2
-	printf 'ERROR: confirm that "buzz-ctl storage-status" reports state "migrated", then update to this release again.\n' >&2
+	print_recovery
+	return 1
+}
+
+refuse_unreadable_record() {
+	printf 'ERROR: Storage record %s is unreadable or has an unknown state.\n' "$RECORD" >&2
+	printf 'ERROR: The relay will not start until the storage state is known.\n' >&2
+	print_recovery
 	return 1
 }
 
@@ -93,7 +105,9 @@ main() {
 	[[ ! -L "$RECORD" && ! -L "$ACTIVE" ]] || return 1
 	ctl stop buzz-relay >/dev/null || return 1
 	if [[ -f "$RECORD" ]]; then
-		state=$(jq -er '.state | select(. == "migrated" or . == "not-needed" or . == "failed")' "$RECORD") || return 1
+		state=$(jq -er '.state | select(. == "migrated" or . == "not-needed" or . == "failed")' "$RECORD" 2>/dev/null) || {
+			refuse_unreadable_record || return 1
+		}
 	fi
 	case "$state" in
 	migrated | not-needed) ;;
