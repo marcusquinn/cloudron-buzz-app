@@ -144,6 +144,8 @@ check_release_workflows() {
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "docker build --platform linux/amd64 --tag cloudron-buzz-app:test ." || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "./test/pairing-proxy-test.sh cloudron-buzz-app:test" || return 1
 	assert_precedes .github/workflows/cloudron-catalog-publish.yml "docker build --platform" "./test/pairing-proxy-test.sh" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "./test/storage-guard-test.sh cloudron-buzz-app:test" || return 1
+	assert_precedes .github/workflows/cloudron-catalog-publish.yml "docker build --platform" "./test/storage-guard-test.sh" || return 1
 	[[ "$(grep -Fc 'secrets.CLOUDRON_RELEASE_PAT' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 1 ]] || fail "Release PAT must be forwarded exactly once to the reusable publisher" || return 1
 	assert_contains scripts/publish-cloudron-catalog.sh "cloudron versions add --image \"\$image_ref\" --state testing" || return 1
 	assert_contains scripts/publish-cloudron-catalog.sh "cloudron versions update --image \"\$image_ref\" --version \"\$package_version\" --state published" || return 1
@@ -155,7 +157,7 @@ main() {
 	local required_file=""
 	local shell_script=""
 
-	for required_file in CloudronManifest.json Dockerfile start.sh run-rustfs.sh storage-setup.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/published-catalog-manifests.sha256 test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
+	for required_file in CloudronManifest.json Dockerfile start.sh run-rustfs.sh storage-setup.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/published-catalog-manifests.sha256 test/pairing-proxy-test.sh test/storage-guard-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
 		assert_file "$required_file" || return 1
 	done
 
@@ -230,7 +232,7 @@ main() {
 	fi
 	pass "Container provenance pins"
 
-	for shell_script in start.sh run-rustfs.sh storage-setup.sh run-pairing-relay.sh run-relay.sh buzz-ctl scripts/publish-cloudron-catalog.sh test/package-test.sh test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh; do
+	for shell_script in start.sh run-rustfs.sh storage-setup.sh run-pairing-relay.sh run-relay.sh buzz-ctl scripts/publish-cloudron-catalog.sh test/package-test.sh test/pairing-proxy-test.sh test/storage-guard-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh; do
 		bash -n "${ROOT_DIR}/${shell_script}"
 		shellcheck "${ROOT_DIR}/${shell_script}"
 	done

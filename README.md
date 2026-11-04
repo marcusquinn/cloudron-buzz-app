@@ -447,6 +447,9 @@ docker build --platform linux/amd64 --tag cloudron-buzz-app:test .
 # Exercise main and exact-path pairing proxy routes in the built image
 ./test/pairing-proxy-test.sh cloudron-buzz-app:test
 
+# Exercise storage startup refusals and the legacy purge in the built image
+./test/storage-guard-test.sh cloudron-buzz-app:test
+
 # Source install and rebuild for development (catalog installs update from the dashboard)
 cloudron install --location buzz
 cloudron update --app buzz
