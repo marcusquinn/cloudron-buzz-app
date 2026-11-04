@@ -3,7 +3,6 @@
 # SPDX-FileCopyrightText: 2026 Marcus Quinn
 
 FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-af5bb0a@sha256:a212517165be1b34de022345a109f93eab2575ed08ed48439db592ce703eff33 AS buzz
-FROM docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46 AS silo
 
 FROM cloudron/base:6.0.1@sha256:7b1e729960c3ca312d26e886917ba89483241bba0219ff292858e10d9d5768ee
 
@@ -11,21 +10,15 @@ LABEL org.opencontainers.image.title="Buzz for Cloudron"
 LABEL org.opencontainers.image.description="Cloudron package for the Buzz human-agent collaboration workspace"
 LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-buzz-app"
 LABEL org.opencontainers.image.url="https://buzz.xyz"
-LABEL org.opencontainers.image.licenses="MIT AND Apache-2.0 AND AGPL-3.0-or-later"
+LABEL org.opencontainers.image.licenses="MIT AND Apache-2.0"
 
-RUN mkdir -p /app/code/bin /srv/buzz/web /srv/buzz/admin-web /usr/share/licenses/buzz /usr/share/licenses/silo
+RUN mkdir -p /app/code/bin /srv/buzz/web /srv/buzz/admin-web /usr/share/licenses/buzz
 
 COPY --from=buzz /usr/local/bin/buzz-relay /app/code/bin/buzz-relay
 COPY --from=buzz /usr/local/bin/buzz-admin /app/code/bin/buzz-admin
 COPY --from=buzz /usr/local/bin/buzz-pair-relay /app/code/bin/buzz-pair-relay
 COPY --from=buzz /srv/buzz/web/ /srv/buzz/web/
 COPY --from=buzz /srv/buzz/admin-web/ /srv/buzz/admin-web/
-
-COPY --from=silo /usr/bin/silo /app/code/bin/silo
-COPY --from=silo /usr/bin/mcli /app/code/bin/mcli
-COPY --from=silo /licenses/LICENSE /usr/share/licenses/silo/LICENSE
-COPY --from=silo /licenses/CREDITS /usr/share/licenses/silo/CREDITS
-COPY --from=silo /licenses/NOTICE /usr/share/licenses/silo/NOTICE
 
 # musl avoids coupling the release binary to the Cloudron base's glibc version.
 # Checked against the 1.0.1 release SHA256SUMS (not the mutable latest asset).
@@ -41,11 +34,9 @@ COPY LICENSES/Apache-2.0.txt /usr/share/licenses/rustfs/LICENSE
 COPY CloudronManifest.json /app/code/CloudronManifest.json
 COPY LICENSE /app/code/LICENSE
 COPY THIRD_PARTY_NOTICES.md /app/code/THIRD_PARTY_NOTICES.md
-COPY start.sh run-minio.sh run-rustfs.sh storage-migrate.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf /app/code/
+COPY start.sh run-rustfs.sh storage-setup.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf /app/code/
 
-RUN chmod 0755 /app/code/run-rustfs.sh /app/code/storage-migrate.sh
-
-RUN chmod 0755 /app/code/start.sh /app/code/run-minio.sh /app/code/run-pairing-relay.sh /app/code/run-relay.sh /app/code/buzz-ctl /app/code/bin/buzz-relay /app/code/bin/buzz-admin /app/code/bin/buzz-pair-relay /app/code/bin/silo /app/code/bin/mcli
+RUN chmod 0755 /app/code/start.sh /app/code/run-rustfs.sh /app/code/storage-setup.sh /app/code/run-pairing-relay.sh /app/code/run-relay.sh /app/code/buzz-ctl /app/code/bin/buzz-relay /app/code/bin/buzz-admin /app/code/bin/buzz-pair-relay
 
 EXPOSE 3000
 

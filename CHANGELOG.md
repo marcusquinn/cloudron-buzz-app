@@ -4,6 +4,35 @@
 
 ## [Unreleased]
 
+## [0.1.27] - 2026-11-04
+
+### Removed
+
+- Remove the bundled PGSTY Silo (MinIO) server, the `mcli` client, their AGPL
+  notices, `run-minio.sh`, and the one-time Silo-to-RustFS migration. RustFS is
+  now the only object store.
+- Remove `buzz-ctl storage-migrate`.
+
+### Changed
+
+- Replace `mcli` bucket setup with SigV4-signed `curl` requests. Credentials are
+  read from a private curl config file, never process arguments. Startup checks
+  that the `buzz-data` bucket rejects anonymous requests.
+- Startup refuses to start the relay when legacy Silo objects were never
+  migrated (no record, or a `failed` record), or when the storage record cannot
+  be read. The log explains recovery: restore
+  the pre-update backup, update to 0.1.26 (the last release with Silo), confirm
+  `storage-status` reports `migrated`, then update again. Cloudron manifests
+  cannot require an intermediate version, so this check runs at startup.
+
+### Added
+
+- `buzz-ctl storage-purge-legacy [--confirm]` deletes the retained
+  `/app/data/minio` directory and its unused Silo credential files. It runs only
+  when storage state is `migrated` or `not-needed`, and only with `--confirm`.
+  A confirmed rerun also removes credential files left behind after the
+  directory is gone. Startup never deletes legacy data.
+
 ## [0.1.26] - 2026-11-04
 
 ### Changed

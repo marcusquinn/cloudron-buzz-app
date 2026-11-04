@@ -15,15 +15,17 @@
 
 Cloudron package for the Buzz human-agent collaboration workspace. It runs a
 single secure Buzz relay with Cloudron PostgreSQL and Redis addons plus a
-loopback-only MinIO service for media and Git object storage.
+loopback-only RustFS service for media and Git object storage.
 
 ## Architecture
 
 - `/app/code` is read-only package code and pinned upstream binaries.
 - `/app/data/config` stores stable relay identity and generated secrets.
-- `/app/data/minio` stores authoritative media and Git objects.
+- `/app/data/rustfs` stores authoritative media and Git objects.
+- `/app/data/minio` (upgraded installs only) is retained legacy Silo data;
+  only `buzz-ctl storage-purge-legacy --confirm` deletes it.
 - `/run/buzz` contains disposable Git hydration and pack-cache data.
-- `supervisord` manages MinIO and the Buzz relay as the `cloudron` user.
+- `supervisord` manages RustFS and the Buzz relay as the `cloudron` user.
 
 ## Conventions
 
@@ -39,7 +41,8 @@ loopback-only MinIO service for media and Git object storage.
 - `Dockerfile`: pinned multi-stage runtime assembly.
 - `start.sh`: secure first-run initialization and process launch.
 - `run-relay.sh`: production Buzz configuration and object-store bootstrap.
-- `run-minio.sh`: private loopback MinIO process.
+- `run-rustfs.sh`: private loopback RustFS process.
+- `storage-setup.sh`: startup storage guard; fails closed on unmigrated data.
 - `buzz-ctl`: owner, member, and health administration.
 - `test/package-test.sh`: static package and security-contract tests.
 

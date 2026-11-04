@@ -8,6 +8,10 @@ readonly OWNER_FILE="/app/data/config/owner-public-key"
 readonly RELAY_PUBLIC_KEY_FILE="/app/data/config/relay-public-key"
 readonly RELAY_PRIVATE_KEY_FILE="/app/data/config/relay-private-key"
 readonly SUPERVISOR_CONFIG="/app/code/supervisord.conf"
+readonly STORAGE_RECORD="/app/data/config/storage-migration.json"
+readonly LEGACY_DIR="/app/data/minio"
+readonly LEGACY_ACCESS_KEY="/app/data/config/minio-access-key"
+readonly LEGACY_SECRET_KEY="/app/data/config/minio-secret-key"
 
 fail() {
 	local message="$1"
@@ -116,9 +120,9 @@ set_owner() {
 	local previous_owner=""
 	local relay_public_key=""
 
-	# Do not restart the relay while an object migration has quiesced it.
+	# Do not restart the relay while storage setup has quiesced it.
 	exec 8>/run/buzz/storage-migration.lock
-	flock -n 8 || { fail "Storage migration or owner change is in progress" || return 1; }
+	flock -n 8 || { fail "Storage setup, legacy purge, or owner change is in progress" || return 1; }
 	load_admin_environment || return 1
 	previous_owner=$(read_value "$OWNER_FILE" "owner public key") || return 1
 	relay_public_key=$(read_value "$RELAY_PUBLIC_KEY_FILE" "relay public key") || return 1
@@ -164,23 +168,67 @@ list_members() {
 }
 
 status() {
-	# Inactive transition services are intentionally STOPPED (supervisor exit 3).
+	# The exited one-shot storage-setup program is reported as EXITED (supervisor exit 3).
 	/usr/bin/supervisorctl --configuration "$SUPERVISOR_CONFIG" status || true
 	printf "\nRelay readiness:\n"
 	curl --fail --silent --show-error --max-time 5 http://127.0.0.1:3000/_readiness || return 1
 	printf "\n\nStorage status:\n"
 	storage_status || return 1
-	case "$(jq -er '.active' /run/buzz/storage.json)" in
-	rustfs) curl --fail --silent --show-error --max-time 5 http://127.0.0.1:9100/health/ready || return 1 ;;
-	silo) curl --fail --silent --show-error --max-time 5 http://127.0.0.1:9000/minio/health/ready || return 1 ;;
-	*) return 1 ;;
-	esac
+	[[ "$(jq -er '.active' /run/buzz/storage.json)" == rustfs ]] || return 1
+	curl --fail --silent --show-error --max-time 5 http://127.0.0.1:9100/health/ready || return 1
 	printf "\n"
 	return 0
 }
 
 storage_status() {
-	jq '{active,state,source_count,destination_count,timestamp,package_version}' /app/data/config/storage-migration.json || return 1
+	jq '{active,state,source_count,destination_count,timestamp,package_version}' "$STORAGE_RECORD" || return 1
+	if [[ -e "$LEGACY_DIR" ]]; then
+		printf "Legacy Silo/MinIO data retained at %s (remove with storage-purge-legacy --confirm)\n" "$LEGACY_DIR"
+	fi
+	return 0
+}
+
+# The legacy Silo credentials protect nothing once the data is gone.
+remove_legacy_credentials() {
+	rm -f -- "$LEGACY_ACCESS_KEY" "$LEGACY_SECRET_KEY" || { fail "Could not remove legacy Silo credentials" || return 1; }
+	return 0
+}
+
+# Deletes legacy Silo/MinIO data only after a verified migration (or when
+# migration found no objects), and only with explicit operator confirmation.
+storage_purge_legacy() {
+	local confirmation="$1"
+	local state=""
+
+	[[ "$EUID" == 0 ]] || { fail "storage-purge-legacy requires root" || return 1; }
+	exec 8>/run/buzz/storage-migration.lock
+	flock -n 8 || { fail "Storage setup, legacy purge, or owner change is in progress" || return 1; }
+	[[ ! -L "$STORAGE_RECORD" && -f "$STORAGE_RECORD" ]] || { fail "Storage migration record is unavailable" || return 1; }
+	state=$(jq -er '.state' "$STORAGE_RECORD") || { fail "Storage migration record is unreadable" || return 1; }
+	if [[ "$state" != migrated && "$state" != not-needed ]]; then
+		fail "Refusing to purge: storage state is '${state}', not 'migrated'" || return 1
+	fi
+	if [[ ! -e "$LEGACY_DIR" && ! -L "$LEGACY_DIR" ]]; then
+		if [[ ! -e "$LEGACY_ACCESS_KEY" && ! -e "$LEGACY_SECRET_KEY" ]]; then
+			printf "No legacy data at %s; nothing to purge.\n" "$LEGACY_DIR"
+			return 0
+		fi
+		if [[ "$confirmation" != --confirm ]]; then
+			printf "No legacy data at %s, but unused legacy Silo credentials remain. Re-run with --confirm to delete them.\n" "$LEGACY_DIR"
+			return 1
+		fi
+		remove_legacy_credentials || return 1
+		printf "Removed unused legacy Silo credentials; no legacy data at %s.\n" "$LEGACY_DIR"
+		return 0
+	fi
+	if [[ "$confirmation" != --confirm ]]; then
+		printf "This permanently deletes %s (%s of legacy Silo/MinIO data).\n" "$LEGACY_DIR" "$(du -sh "$LEGACY_DIR" 2>/dev/null | cut -f1)"
+		printf "RustFS at /app/data/rustfs is the active store (state: %s). Re-run with --confirm to delete.\n" "$state"
+		return 1
+	fi
+	rm -rf --one-file-system -- "$LEGACY_DIR" || { fail "Could not remove ${LEGACY_DIR}" || return 1; }
+	remove_legacy_credentials || return 1
+	printf "Removed legacy Silo/MinIO data at %s.\n" "$LEGACY_DIR"
 	return 0
 }
 
@@ -196,7 +244,7 @@ usage() {
 		"  list-members                            List relay members" \
 		"  status                                  Show process and dependency health" \
 		"  storage-status                          Show active store and migration counts" \
-		"  storage-migrate                         Quiesce relay and retry migration (root)"
+		"  storage-purge-legacy [--confirm]        Delete migrated legacy Silo data (root)"
 	return 0
 }
 
@@ -222,7 +270,7 @@ main() {
 	list-members) list_members || return 1 ;;
 	status) status || return 1 ;;
 	storage-status) storage_status || return 1 ;;
-	storage-migrate) /app/code/storage-migrate.sh || return 1 ;;
+	storage-purge-legacy) storage_purge_legacy "$first_argument" || return 1 ;;
 	help | --help | -h) usage || return 1 ;;
 	*)
 		usage

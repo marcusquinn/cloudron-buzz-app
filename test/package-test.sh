@@ -155,11 +155,11 @@ main() {
 	local required_file=""
 	local shell_script=""
 
-	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/published-catalog-manifests.sha256 test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
+	for required_file in CloudronManifest.json Dockerfile start.sh run-rustfs.sh storage-setup.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/published-catalog-manifests.sha256 test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.26\" and .upstreamVersion == \"0.5.27\" and .minBoxVersion == \"10.0.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and .packageUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.27\" and .upstreamVersion == \"0.5.27\" and .minBoxVersion == \"10.0.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and .packageUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
@@ -169,8 +169,8 @@ main() {
 	jq --exit-status '[.versions[].manifest | select(has("packageUrl")) | (.minBoxVersion | split(".") | .[0] | tonumber) >= 10] | all' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
 		fail "Catalog entries with packageUrl must require Cloudron 10.0.0 or later" || return 1
 	}
-	assert_contains CHANGELOG '[0.1.26]' || return 1
-	assert_contains CHANGELOG.md '[0.1.26]' || return 1
+	assert_contains CHANGELOG '[0.1.27]' || return 1
+	assert_contains CHANGELOG.md '[0.1.27]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.4"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	assert_published_catalog_baseline || return 1
@@ -188,7 +188,7 @@ main() {
 	assert_contains README.md "[SECURITY.md](SECURITY.md)" || return 1
 	assert_contains CloudronManifest.json "wss://\$CLOUDRON-APP-FQDN" || return 1
 	assert_contains SECURITY.md "GitHub's private vulnerability reporting" || return 1
-	assert_contains SECURITY.md "| \`0.1.26\` | \`0.5.27\` | Yes |" || return 1
+	assert_contains SECURITY.md "| \`0.1.27\` | \`0.5.27\` | Yes |" || return 1
 
 	if git -C "$ROOT_DIR" ls-files -s | grep -Eq '^120000 '; then
 		fail "Published source must not contain tracked symlinks" || return 1
@@ -216,23 +216,21 @@ main() {
 	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_AMD64_DIGEST="sha256:dd998c7499d92cffbf5a71609a5231bd88d3ca0e987f03d1324bd759db57ccb7"' || return 1
 	assert_contains test/verify-buzz-image.sh "docker buildx imagetools inspect" || return 1
 	assert_contains test/verify-buzz-image.sh 'org.opencontainers.image.revision' || return 1
-	assert_contains Dockerfile "docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46 AS silo" || return 1
-	assert_contains THIRD_PARTY_NOTICES.md "docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46" || return 1
-	assert_contains Dockerfile 'COPY --from=silo /usr/bin/silo /app/code/bin/silo' || return 1
-	assert_contains Dockerfile 'COPY --from=silo /usr/bin/mcli /app/code/bin/mcli' || return 1
-	assert_contains Dockerfile 'COPY --from=silo /licenses/NOTICE /usr/share/licenses/silo/NOTICE' || return 1
-	assert_contains run-minio.sh '/app/code/bin/silo server /app/data/minio --address 127.0.0.1:9000 --console-address 127.0.0.1:9001' || return 1
-	assert_contains run-minio.sh 'export MINIO_BROWSER=off' || return 1
-	assert_contains run-minio.sh 'export MINIO_UPDATE=off' || return 1
-	assert_contains run-relay.sh "MC_CONFIG_DIR=\"\${RUN_DIR}/mc\" /app/code/bin/mcli anonymous set none" || return 1
-	assert_contains buzz-ctl '/minio/health/ready' || return 1
+	# GH#92: the Silo/MinIO server and mcli client are no longer shipped.
+	if grep -Eiq 'silo|mcli|minio' "${ROOT_DIR}/Dockerfile" "${ROOT_DIR}/supervisord.conf" "${ROOT_DIR}/run-relay.sh"; then
+		fail "Silo/MinIO components must not remain in the image or runtime" || return 1
+	fi
+	if [[ -e "${ROOT_DIR}/run-minio.sh" || -e "${ROOT_DIR}/storage-migrate.sh" ]]; then
+		fail "Legacy Silo launcher and migration scripts must be removed" || return 1
+	fi
+	assert_contains Dockerfile 'LABEL org.opencontainers.image.licenses="MIT AND Apache-2.0"' || return 1
 	assert_contains Dockerfile "cloudron/base:6.0.1@sha256:7b1e729960c3ca312d26e886917ba89483241bba0219ff292858e10d9d5768ee" || return 1
 	if grep -Eq "^FROM[[:space:]]+([^[:space:]@-][^[:space:]@]*|--platform=[^[:space:]]+[[:space:]]+[^[:space:]@]+)(:latest)?([[:space:]]|$)" "${ROOT_DIR}/Dockerfile"; then
 		fail "Every Docker stage must be tag-and-digest pinned" || return 1
 	fi
 	pass "Container provenance pins"
 
-	for shell_script in start.sh run-minio.sh run-rustfs.sh storage-migrate.sh run-pairing-relay.sh run-relay.sh buzz-ctl scripts/publish-cloudron-catalog.sh test/package-test.sh test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh; do
+	for shell_script in start.sh run-rustfs.sh storage-setup.sh run-pairing-relay.sh run-relay.sh buzz-ctl scripts/publish-cloudron-catalog.sh test/package-test.sh test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh; do
 		bash -n "${ROOT_DIR}/${shell_script}"
 		shellcheck "${ROOT_DIR}/${shell_script}"
 	done
@@ -260,15 +258,21 @@ main() {
 	assert_contains run-rustfs.sh 'RUSTFS_ADDRESS=127.0.0.1:9100' || return 1
 	assert_contains run-rustfs.sh 'RUSTFS_CONSOLE_ENABLE=false' || return 1
 	assert_contains run-rustfs.sh 'RUSTFS_SECRET_KEY_FILE=/app/data/config/rustfs-secret-key' || return 1
-	assert_contains storage-migrate.sh 'mc mirror --overwrite --remove legacy/buzz-data rustfs/buzz-data' || return 1
-	assert_contains storage-migrate.sh "cmp -s \"\$WORK/source.json\" \"\$WORK/destination.json\"" || return 1
-	assert_contains storage-migrate.sh 'record failed silo null null' || return 1
-	assert_contains storage-migrate.sh 'flock -n 9' || return 1
-	assert_contains run-relay.sh 'STORAGE_READY_PATH="/health/ready"' || return 1
-	assert_contains buzz-ctl 'storage-migrate)' || return 1
-	pass "RustFS transition contract"
+	assert_contains storage-setup.sh 'readonly LAST_DUAL_STORE_RELEASE=0.1.26' || return 1
+	assert_contains storage-setup.sh "failed) refuse_unmigrated \"\$state\" || return 1 ;;" || return 1
+	assert_contains storage-setup.sh 'flock -n 9' || return 1
+	assert_contains run-relay.sh 'readonly STORAGE_ENDPOINT="http://127.0.0.1:9100"' || return 1
+	assert_contains run-relay.sh "--config \"\$S3_CURL_CONFIG\" --aws-sigv4 \"aws:amz:us-east-1:s3\"" || return 1
+	assert_contains run-relay.sh 'Buzz bucket must refuse anonymous access' || return 1
+	assert_contains buzz-ctl "storage-purge-legacy) storage_purge_legacy \"\$first_argument\" || return 1 ;;" || return 1
+	assert_contains buzz-ctl "if [[ \"\$confirmation\" != --confirm ]]; then" || return 1
+	assert_contains buzz-ctl "if [[ \"\$state\" != migrated && \"\$state\" != not-needed ]]; then" || return 1
+	if grep -Eq 'rm -rf' "${ROOT_DIR}/start.sh" "${ROOT_DIR}/storage-setup.sh"; then
+		fail "Startup must never delete legacy storage automatically" || return 1
+	fi
+	pass "RustFS-only storage contract"
 
-	if grep -Eq "printf.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)|echo.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)" "${ROOT_DIR}/start.sh" "${ROOT_DIR}/run-minio.sh" "${ROOT_DIR}/run-pairing-relay.sh" "${ROOT_DIR}/run-relay.sh" "${ROOT_DIR}/buzz-ctl"; then
+	if grep -Eq "printf.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)|echo.*(PRIVATE_KEY|SECRET_KEY|PASSWORD)" "${ROOT_DIR}/start.sh" "${ROOT_DIR}/storage-setup.sh" "${ROOT_DIR}/run-pairing-relay.sh" "${ROOT_DIR}/run-relay.sh" "${ROOT_DIR}/buzz-ctl"; then
 		fail "A runtime script may print secret material" || return 1
 	fi
 	pass "No obvious secret disclosure"

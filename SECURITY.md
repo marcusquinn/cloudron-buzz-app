@@ -7,7 +7,7 @@ latest package release and its pinned upstream Buzz version.
 
 | Package version | Upstream Buzz | Supported |
 | --- | --- | --- |
-| `0.1.26` | `0.5.27` | Yes |
+| `0.1.27` | `0.5.27` | Yes |
 | Earlier versions | Earlier versions | No |
 
 ## Reporting a vulnerability
@@ -30,29 +30,21 @@ private Nostr keys, private community content, or production data.
 
 Reports may cover the Cloudron packaging, runtime configuration, persistence,
 authentication boundaries, deployment scripts, and interactions with the
-pinned Buzz, RustFS and PGSTY Silo components. Upstream-only defects may be redirected to
+pinned Buzz and RustFS components. Upstream-only defects may be redirected to
 the relevant upstream security process.
 
 ## Object-storage dependency
 
-RustFS 1.0.1 is the long-term store, checksum-pinned to its official musl release
-asset and licensed Apache-2.0. It binds to `127.0.0.1:9100`, disables the console,
-and reads generated credentials from private files. `mcli anonymous set none`
-enforces the private bucket before the relay starts.
+RustFS 1.0.1 is the only object store. It is checksum-pinned to its official
+musl release asset, licensed Apache-2.0, binds to `127.0.0.1:9100`, disables the
+console, and reads generated credentials from private files. Before the relay
+starts, SigV4-signed `curl` requests create the `buzz-data` bucket and remove any
+bucket policy. Startup then fails unless an anonymous request is refused. The
+signing credentials are read from a `0600` curl config under `/run/buzz/s3`,
+never from process arguments.
 
-Migration copies over authenticated S3, never opens MinIO data in RustFS, and
-switches only after key/size/count verification. Failure retains Silo and retries
-on restart. Silo and legacy data remain for a few releases, then will be removed.
-Downgrades see only pre-migration objects; use a matching full Cloudron backup
-for complete rollback. No credential values appear in migration status.
-
-The withdrawn MinIO community images are replaced by PGSTY Silo
-`RELEASE.2026-09-16T00-00-00Z`, licensed AGPL-3.0-or-later and pinned to index
-digest `sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46`.
-Source and bundled licence notices are documented in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-Silo retains the MinIO storage format and health routes. It uses the existing
-`/app/data/minio` directory and credential files without a data migration.
-The server remains loopback-only, its browser and updater are disabled, and
-`mcli anonymous set none` enforces the private `buzz-data` bucket on startup.
+Package 0.1.27 removed the bundled PGSTY Silo (MinIO) server and the one-time
+migration. Startup fails closed when legacy objects were never migrated, so the
+relay never runs with incomplete media and Git data. Legacy `/app/data/minio` data
+is never deleted automatically; `buzz-ctl storage-purge-legacy --confirm` removes
+it only after a `migrated` or `not-needed` state.
