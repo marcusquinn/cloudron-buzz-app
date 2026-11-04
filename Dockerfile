@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2026 Marcus Quinn
 
-FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-dad5a33@sha256:c8a9e3f2cbdfb71bb72e1fc2669dd3dad0ca084caa460352fde78ca2af5de9b5 AS buzz
+FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-af5bb0a@sha256:a212517165be1b34de022345a109f93eab2575ed08ed48439db592ce703eff33 AS buzz
 FROM docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46 AS silo
 
 FROM cloudron/base:6.0.1@sha256:7b1e729960c3ca312d26e886917ba89483241bba0219ff292858e10d9d5768ee

@@ -1,3 +1,7 @@
+[0.1.26]
+* Upgrade Buzz relay binaries and web assets to desktop-v0.5.27.
+* Verify the qualified immutable release-parent image and refresh upstream provenance.
+
 [0.1.25]
 * The Community Apps Package link now opens this repository. The listing builds that link from packagerUrl, so the 0.1.24 packageUrl change had no visible effect.
 * No change to the app; Buzz stays at 0.5.23.

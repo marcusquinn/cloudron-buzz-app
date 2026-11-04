@@ -121,7 +121,6 @@ main() {
 	export BUZZ_CORS_ORIGINS="https://${CLOUDRON_APP_DOMAIN},tauri://localhost,http://tauri.localhost,https://tauri.localhost"
 	export BUZZ_AUTO_MIGRATE="$FEATURE_ENABLED"
 	export BUZZ_AUDIT_ENABLED="$FEATURE_ENABLED"
-	export BUZZ_REQUIRE_MEDIA_GET_AUTH="$FEATURE_ENABLED"
 	export BUZZ_HUDDLE_AUDIO_AVAILABLE="$FEATURE_ENABLED"
 	export BUZZ_MESH="off"
 	export BUZZ_SERVE_GIT_WEB_GUI="$FEATURE_ENABLED"
