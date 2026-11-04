@@ -32,5 +32,7 @@ jobs:
         # Preserve the package-specific runtime check before any publication.
         docker build --platform linux/amd64 --tag cloudron-buzz-app:test .
         ./test/pairing-proxy-test.sh cloudron-buzz-app:test
+        # Storage startup guard refusals and legacy purge safeguards.
+        ./test/storage-guard-test.sh cloudron-buzz-app:test
     secrets:
       CLOUDRON_RELEASE_PAT: ${{ secrets.CLOUDRON_RELEASE_PAT }}
