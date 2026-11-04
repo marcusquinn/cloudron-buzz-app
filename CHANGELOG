@@ -1,3 +1,8 @@
+[0.1.27]
+* Remove the bundled Silo (MinIO) server and the one-time migration; RustFS is the only object store.
+* Installs that never finished migrating to RustFS refuse to start the relay and log recovery steps: restore the pre-update backup, update to 0.1.26, migrate, then update again.
+* Legacy /app/data/minio is kept until you run "buzz-ctl storage-purge-legacy --confirm".
+
 [0.1.26]
 * Upgrade Buzz relay binaries and web assets to desktop-v0.5.27.
 * Verify the qualified immutable release-parent image and refresh upstream provenance.

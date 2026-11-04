@@ -5,9 +5,8 @@
 set -euo pipefail
 
 readonly RUN_DIR="/run/buzz"
-MINIO_ENDPOINT="http://127.0.0.1:9000"
-STORAGE_READY_PATH="/minio/health/ready"
-STORAGE_CREDENTIAL_PREFIX=minio
+readonly STORAGE_ENDPOINT="http://127.0.0.1:9100"
+readonly S3_CURL_CONFIG="${RUN_DIR}/s3/curl.conf"
 readonly S3_BUCKET="buzz-data"
 readonly FEATURE_ENABLED="true"
 
@@ -47,35 +46,54 @@ validate_service_urls() {
 	return 0
 }
 
-ensure_minio_bucket() {
+# Signed S3 request; credentials stay in a private curl config, never argv.
+# Prints only the HTTP status code.
+s3_status() {
+	local method="$1"
+	local path="$2"
+	local method_args=(--request "$method")
+	# --request HEAD would wait for a body that never arrives; --head does not.
+	[[ "$method" != HEAD ]] || method_args=(--head)
+	curl --silent --max-time 10 --output /dev/null --write-out '%{http_code}' \
+		--config "$S3_CURL_CONFIG" --aws-sigv4 "aws:amz:us-east-1:s3" \
+		"${method_args[@]}" "${STORAGE_ENDPOINT}${path}" || return 1
+	return 0
+}
+
+ensure_private_bucket() {
+	local access_key="$1"
+	local secret_key="$2"
 	local attempt=0
 	local max_attempts=90
+	local code=""
 
 	while ((attempt < max_attempts)); do
-		if curl --fail --silent --show-error --max-time 2 "${MINIO_ENDPOINT}${STORAGE_READY_PATH}" >/dev/null 2>&1; then
+		if curl --fail --silent --show-error --max-time 2 "${STORAGE_ENDPOINT}/health/ready" >/dev/null 2>&1; then
 			break
 		fi
 		((attempt += 1))
 		sleep 1
 	done
 	if ((attempt >= max_attempts)); then
-		fail "Active object store did not become ready within ${max_attempts} seconds" || return 1
+		fail "RustFS did not become ready within ${max_attempts} seconds" || return 1
 	fi
 
 	umask 077
-	if ! jq -n --arg endpoint "$MINIO_ENDPOINT" \
-		--rawfile access "/app/data/config/${STORAGE_CREDENTIAL_PREFIX}-access-key" \
-		--rawfile secret "/app/data/config/${STORAGE_CREDENTIAL_PREFIX}-secret-key" \
-		'{version:"10",aliases:{cloudron:{url:$endpoint,accessKey:($access|rtrimstr("\n")),secretKey:($secret|rtrimstr("\n")),api:"S3v4",path:"auto"}}}' \
-		>"${RUN_DIR}/mc/config.json"; then
-		fail "Could not configure the local object-storage client" || return 1
+	# Generated keys are hex; anything else could break curl config quoting.
+	[[ "$access_key" =~ ^[0-9a-f]+$ && "$secret_key" =~ ^[0-9a-f]+$ ]] || { fail "RustFS credentials must be hexadecimal" || return 1; }
+	[[ ! -L "$S3_CURL_CONFIG" ]] || { fail "Refusing symlinked S3 client config" || return 1; }
+	printf 'user = "%s:%s"\n' "$access_key" "$secret_key" >"$S3_CURL_CONFIG" || return 1
+
+	code=$(s3_status HEAD "/${S3_BUCKET}") || code=""
+	if [[ "$code" == 404 ]]; then
+		code=$(s3_status PUT "/${S3_BUCKET}") || code=""
 	fi
-	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mcli mb --ignore-existing "cloudron/${S3_BUCKET}" >/dev/null 2>&1; then
-		fail "Could not create the private Buzz object-storage bucket" || return 1
-	fi
-	if ! MC_CONFIG_DIR="${RUN_DIR}/mc" /app/code/bin/mcli anonymous set none "cloudron/${S3_BUCKET}" >/dev/null 2>&1; then
-		fail "Could not enforce the private Buzz bucket policy" || return 1
-	fi
+	[[ "$code" == 200 ]] || { fail "Could not create the private Buzz object-storage bucket (HTTP ${code:-none})" || return 1; }
+	# Remove any bucket policy; no policy means owner-only access.
+	code=$(s3_status DELETE "/${S3_BUCKET}?policy") || code=""
+	[[ "$code" == 204 || "$code" == 200 || "$code" == 404 ]] || { fail "Could not enforce the private Buzz bucket policy (HTTP ${code:-none})" || return 1; }
+	code=$(curl --silent --max-time 10 --output /dev/null --write-out '%{http_code}' "${STORAGE_ENDPOINT}/${S3_BUCKET}") || code=""
+	[[ "$code" == 403 ]] || { fail "Buzz bucket must refuse anonymous access (HTTP ${code:-none})" || return 1; }
 	return 0
 }
 
@@ -83,28 +101,18 @@ main() {
 	local relay_private_key=""
 	local owner_public_key=""
 	local git_hook_secret=""
-	local minio_access_key=""
-	local minio_secret_key=""
+	local storage_access_key=""
+	local storage_secret_key=""
 
 	validate_service_urls || return 1
 	relay_private_key=$(read_secret /app/data/config/relay-private-key "relay private key") || return 1
 	owner_public_key=$(read_secret /app/data/config/owner-public-key "owner public key") || return 1
 	git_hook_secret=$(read_secret /app/data/config/git-hook-hmac-secret "Git hook HMAC secret") || return 1
-	minio_access_key=$(read_secret /app/data/config/minio-access-key "MinIO access key") || return 1
-	minio_secret_key=$(read_secret /app/data/config/minio-secret-key "MinIO secret key") || return 1
 
 	[[ ! -L /run/buzz/storage.json ]] || return 1
-	case "$(jq -er '.active' /run/buzz/storage.json)" in
-	rustfs)
-		MINIO_ENDPOINT="http://127.0.0.1:9100"
-		STORAGE_READY_PATH="/health/ready"
-		STORAGE_CREDENTIAL_PREFIX=rustfs
-		minio_access_key=$(read_secret /app/data/config/rustfs-access-key "RustFS access key") || return 1
-		minio_secret_key=$(read_secret /app/data/config/rustfs-secret-key "RustFS secret key") || return 1
-		;;
-	silo) ;;
-	*) fail "No verified active object store" || return 1 ;;
-	esac
+	[[ "$(jq -er '.active' /run/buzz/storage.json)" == rustfs ]] || { fail "No verified active object store" || return 1; }
+	storage_access_key=$(read_secret /app/data/config/rustfs-access-key "RustFS access key") || return 1
+	storage_secret_key=$(read_secret /app/data/config/rustfs-secret-key "RustFS secret key") || return 1
 
 	export DATABASE_URL="${CLOUDRON_POSTGRESQL_URL}"
 	export REDIS_URL="${CLOUDRON_REDIS_URL}"
@@ -133,16 +141,16 @@ main() {
 	export BUZZ_GIT_PACK_CACHE_MAX_BYTES="1073741824"
 	export BUZZ_GIT_HOOK_HMAC_SECRET="$git_hook_secret"
 	export BUZZ_GIT_CONFORMANCE_PROBE="$FEATURE_ENABLED"
-	export BUZZ_S3_ENDPOINT="$MINIO_ENDPOINT"
-	export BUZZ_S3_ACCESS_KEY="$minio_access_key"
-	export BUZZ_S3_SECRET_KEY="$minio_secret_key"
+	export BUZZ_S3_ENDPOINT="$STORAGE_ENDPOINT"
+	export BUZZ_S3_ACCESS_KEY="$storage_access_key"
+	export BUZZ_S3_SECRET_KEY="$storage_secret_key"
 	export BUZZ_S3_BUCKET="$S3_BUCKET"
 	export BUZZ_S3_REGION="us-east-1"
 	export BUZZ_MEDIA_BASE_URL="https://${CLOUDRON_APP_DOMAIN}/media"
 	export RUST_LOG="${RUST_LOG:-buzz_relay=info,buzz_db=info,buzz_media=info}"
 	export HOME="$RUN_DIR"
 
-	ensure_minio_bucket || return 1
+	ensure_private_bucket "$storage_access_key" "$storage_secret_key" || return 1
 	log "Launching Buzz relay at wss://${CLOUDRON_APP_DOMAIN}"
 	return 0
 }
