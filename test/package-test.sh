@@ -8,6 +8,7 @@ TEST_DIR=""
 TEST_DIR=$(cd "${BASH_SOURCE[0]%/*}" && pwd)
 readonly TEST_DIR
 readonly ROOT_DIR="${TEST_DIR%/*}"
+readonly CATALOG_BASELINE="test/published-catalog-manifests.sha256"
 
 fail() {
 	local message="$1"
@@ -47,6 +48,67 @@ assert_precedes() {
 	first_line="$(grep -nF -- "$first" "${ROOT_DIR}/${relative_path}" | cut -d: -f1)"
 	second_line="$(grep -nF -- "$second" "${ROOT_DIR}/${relative_path}" | cut -d: -f1)"
 	[[ -n "$first_line" && -n "$second_line" && "$first_line" -lt "$second_line" ]] || fail "${relative_path} must place ${first} before ${second}" || return 1
+	return 0
+}
+
+catalog_manifest_digest() {
+	local version="$1"
+	jq -cS --arg version "$version" '.versions[$version].manifest' "${ROOT_DIR}/CloudronVersions.json" | shasum -a 256 | cut -d ' ' -f1
+	return 0
+}
+
+# An unrecorded current-version entry must be exactly what the publisher builds:
+# the source manifest, its CHANGELOG section, and an immutable package image.
+assert_current_catalog_entry() {
+	local version="$1"
+	local changelog_section=""
+
+	changelog_section=$(awk -v header="[${version}]" '$0 == header {found=1; next} found && /^$/ {exit} found {print}' "${ROOT_DIR}/CHANGELOG")
+	jq -e --arg version "$version" --arg changelog "${changelog_section}"$'\n' --slurpfile source "${ROOT_DIR}/CloudronManifest.json" '
+		.versions[$version].manifest as $entry
+		| ($entry.dockerImage | test("^ghcr\\.io/marcusquinn/cloudron-buzz-app@sha256:[0-9a-f]{64}$"))
+		and $entry.changelog == $changelog
+		and ($entry | del(.dockerImage, .changelog)) == ($source[0] | del(.changelog))
+	' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Unrecorded catalog entry ${version} does not match CloudronManifest.json, CHANGELOG and an immutable package image" || return 1
+	return 0
+}
+
+# Published catalog entries are append-only. The baseline holds one
+# "<version> <sha256 of the canonical manifest>" line per published version and
+# is checked against the checked-out tree, not the merge base. The managed
+# publisher appends the current manifest version to the catalog on main without
+# touching this file, so only that version may be unrecorded, and it must match
+# the source manifest; the next package release PR must record it.
+assert_published_catalog_baseline() {
+	local baseline="${ROOT_DIR}/${CATALOG_BASELINE}"
+	local catalog="${ROOT_DIR}/CloudronVersions.json"
+	local current_version=""
+	local version=""
+	local expected_digest=""
+	local missing=""
+
+	if grep -Evq '^[0-9]+\.[0-9]+\.[0-9]+ [0-9a-f]{64}$' "$baseline"; then
+		fail "${CATALOG_BASELINE} lines must be '<version> <sha256>'" || return 1
+	fi
+	if [[ -n "$(cut -d ' ' -f1 "$baseline" | sort | uniq -d)" ]]; then
+		fail "${CATALOG_BASELINE} records a version more than once" || return 1
+	fi
+	while read -r version expected_digest; do
+		jq -e --arg version "$version" '.versions | has($version)' "$catalog" >/dev/null || fail "Recorded catalog version ${version} was removed; published entries are append-only" || return 1
+		[[ "$(catalog_manifest_digest "$version")" == "$expected_digest" ]] || fail "Published catalog manifest ${version} changed; add a new version instead of mutating a published entry" || return 1
+	done <"$baseline"
+	current_version=$(jq -r '.version' "${ROOT_DIR}/CloudronManifest.json")
+	while read -r version; do
+		if [[ "$version" == "$current_version" ]]; then
+			grep -q "^${version//./\\.} " "$baseline" || assert_current_catalog_entry "$version" || return 1
+			continue
+		fi
+		grep -q "^${version//./\\.} " "$baseline" || missing="${missing}${version} $(catalog_manifest_digest "$version")"$'\n'
+	done < <(jq -r '.versions | to_entries[] | select(.value.publishState == "published") | .key' "$catalog")
+	if [[ -n "$missing" ]]; then
+		printf "Append these lines to %s:\n%s" "$CATALOG_BASELINE" "$missing" >&2
+		fail "Published catalog entries are not recorded in ${CATALOG_BASELINE}" || return 1
+	fi
 	return 0
 }
 
@@ -93,7 +155,7 @@ main() {
 	local required_file=""
 	local shell_script=""
 
-	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
+	for required_file in CloudronManifest.json Dockerfile start.sh run-minio.sh run-pairing-relay.sh run-relay.sh buzz-ctl nginx.conf supervisord.conf README.md SECURITY.md CHANGELOG.md CHANGELOG CloudronVersions.json PUBLISHING.md DESIGN.md media/hero.png LICENSE LICENSES/Apache-2.0.txt THIRD_PARTY_NOTICES.md icon.png scripts/publish-cloudron-catalog.sh test/published-catalog-manifests.sha256 test/pairing-proxy-test.sh test/publish-catalog-test.sh test/verify-buzz-image.sh .agents/AGENTS.md .github/workflows/cloudron-catalog-publish.yml .github/workflows/cloudron-package-release.yml; do
 		assert_file "$required_file" || return 1
 	done
 
@@ -111,6 +173,7 @@ main() {
 	assert_contains CHANGELOG.md '[0.1.25]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.4"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
+	assert_published_catalog_baseline || return 1
 	pass "Cloudron community publishing baseline"
 	assert_contains CloudronManifest.json "Join a community" || return 1
 	assert_contains CloudronManifest.json "hosted Builderlab workflow" || return 1

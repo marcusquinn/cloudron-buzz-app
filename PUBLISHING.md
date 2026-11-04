@@ -83,6 +83,14 @@ Published entries are append-only. For a critical bad release, run
 `cloudron versions revoke`, bump the package version, rebuild, and add a new
 entry. Do not mutate the manifest or image of a published version.
 
+`test/published-catalog-manifests.sha256` records one
+`<version> <sha256>` line per published entry (SHA-256 of the canonical
+`jq -cS` manifest). `./test/package-test.sh` fails when a recorded manifest
+changes or disappears. The publisher appends the new release to the catalog
+without editing this file, so only the current manifest version may be
+unrecorded. Each package release PR appends the previous release's line; the
+failing check prints the exact lines to add.
+
 Cloudron validates the complete catalog before selecting a compatible version.
 Every historical manifest must therefore remain parseable by the oldest
 supported Cloudron release. Do not add fields introduced by a newer Cloudron

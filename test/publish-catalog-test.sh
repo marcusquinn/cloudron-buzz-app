@@ -8,6 +8,7 @@ TEST_DIR=""
 TEST_DIR=$(cd "${BASH_SOURCE[0]%/*}" && pwd)
 readonly TEST_DIR
 readonly PUBLISHER="${TEST_DIR%/*}/scripts/publish-cloudron-catalog.sh"
+readonly PACKAGE_VERSION="1.2.3"
 TEST_ROOT=""
 PASSED=0
 FAILED=0
@@ -91,11 +92,11 @@ FAKE
 write_fixture() {
 	local fixture_dir="$1"
 	mkdir -p "$fixture_dir"
-	cat >"${fixture_dir}/CloudronManifest.json" <<'JSON'
+	cat >"${fixture_dir}/CloudronManifest.json" <<JSON
 {
   "id": "example.test",
   "title": "Example",
-  "version": "1.2.3",
+  "version": "${PACKAGE_VERSION}",
   "upstreamVersion": "4.5.6",
   "manifestVersion": 2
 }
@@ -121,7 +122,7 @@ test_valid_publication() {
 		fail "immutable image is published"
 		return 0
 	fi
-	if jq --exit-status --arg image "$image_ref" '.versions["1.2.3"].publishState == "published" and .versions["1.2.3"].manifest.dockerImage == $image' "${fixture_dir}/CloudronVersions.json" >/dev/null; then
+	if jq --exit-status --arg image "$image_ref" --arg version "$PACKAGE_VERSION" '.versions[$version].publishState == "published" and .versions[$version].manifest.dockerImage == $image' "${fixture_dir}/CloudronVersions.json" >/dev/null; then
 		pass "published entry preserves the exact digest reference"
 	else
 		fail "published entry preserves the exact digest reference"
@@ -134,7 +135,7 @@ test_mutable_reference_rejected() {
 	local bin_dir="${TEST_ROOT}/bin"
 	write_fixture "$fixture_dir"
 	write_fake_cloudron "$bin_dir"
-	if CLOUDRON_PACKAGE_ROOT="$fixture_dir" PATH="${bin_dir}:$PATH" "$PUBLISHER" "ghcr.io/example/package:1.2.3" >/dev/null 2>&1; then
+	if CLOUDRON_PACKAGE_ROOT="$fixture_dir" PATH="${bin_dir}:$PATH" "$PUBLISHER" "ghcr.io/example/package:${PACKAGE_VERSION}" >/dev/null 2>&1; then
 		fail "mutable image reference is rejected"
 	else
 		pass "mutable image reference is rejected"
@@ -148,7 +149,7 @@ test_existing_version_rejected() {
 	local before=""
 	write_fixture "$fixture_dir"
 	write_fake_cloudron "$bin_dir"
-	jq '.versions["1.2.3"] = {publishState: "published"}' "${fixture_dir}/CloudronVersions.json" >"${fixture_dir}/existing.json"
+	jq --arg version "$PACKAGE_VERSION" '.versions[$version] = {publishState: "published"}' "${fixture_dir}/CloudronVersions.json" >"${fixture_dir}/existing.json"
 	mv "${fixture_dir}/existing.json" "${fixture_dir}/CloudronVersions.json"
 	before=$(cksum "${fixture_dir}/CloudronVersions.json")
 	if CLOUDRON_PACKAGE_ROOT="$fixture_dir" PATH="${bin_dir}:$PATH" "$PUBLISHER" "ghcr.io/example/package@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" >/dev/null 2>&1; then
