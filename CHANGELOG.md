@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+## [0.1.26] - 2026-11-04
+
+### Changed
+
+- Upgrade the pinned Buzz relay binaries and web assets from `desktop-v0.5.23`
+  to `desktop-v0.5.27` using the qualified release-parent image.
+- Refresh registry-inspected image digests and upstream provenance, verifying
+  that the image revision is the immediate ancestor of the release tag.
+- Stop setting `BUZZ_REQUIRE_MEDIA_GET_AUTH`; Buzz 0.5.27 no longer reads it and
+  always requires Blossom authorization plus relay membership for media reads.
+
 ## [0.1.25] - 2026-11-02
 
 ### Changed
