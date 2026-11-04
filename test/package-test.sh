@@ -8,6 +8,7 @@ TEST_DIR=""
 TEST_DIR=$(cd "${BASH_SOURCE[0]%/*}" && pwd)
 readonly TEST_DIR
 readonly ROOT_DIR="${TEST_DIR%/*}"
+readonly CATALOG_BASELINE="test/published-catalog-manifests.sha256"
 
 fail() {
 	local message="$1"
@@ -51,18 +52,44 @@ assert_precedes() {
 }
 
 catalog_manifest_digest() {
-	jq -cS '[.versions | to_entries[] | select(.value.publishState == "published") | {version: .key, manifest: .value.manifest}] | sort_by(.version)' "${ROOT_DIR}/CloudronVersions.json" | shasum -a 256 | cut -d ' ' -f1
+	local version="$1"
+	jq -cS --arg version "$version" '.versions[$version].manifest' "${ROOT_DIR}/CloudronVersions.json" | shasum -a 256 | cut -d ' ' -f1
 	return 0
 }
 
+# Published catalog entries are append-only. The baseline holds one
+# "<version> <sha256 of the canonical manifest>" line per published version and
+# is checked against the checked-out tree, not the merge base. The managed
+# publisher appends the current manifest version to the catalog on main without
+# touching this file, so only that version may be unrecorded; the next package
+# release PR must record it.
 assert_published_catalog_baseline() {
+	local baseline="${ROOT_DIR}/${CATALOG_BASELINE}"
+	local catalog="${ROOT_DIR}/CloudronVersions.json"
+	local current_version=""
+	local version=""
 	local expected_digest=""
-	local actual_digest=""
+	local missing=""
 
-	expected_digest=$(tr -d '[:space:]' < "${ROOT_DIR}/test/published-catalog-manifests.sha256")
-	[[ "$expected_digest" =~ ^[0-9a-f]{64}$ ]] || fail "Published catalog manifest baseline must contain one SHA-256 digest" || return 1
-	actual_digest=$(catalog_manifest_digest)
-	[[ "$actual_digest" == "$expected_digest" ]] || fail "Published catalog manifests changed; add a new version instead of mutating a published entry" || return 1
+	if grep -Evq '^[0-9]+\.[0-9]+\.[0-9]+ [0-9a-f]{64}$' "$baseline"; then
+		fail "${CATALOG_BASELINE} lines must be '<version> <sha256>'" || return 1
+	fi
+	if [[ -n "$(cut -d ' ' -f1 "$baseline" | sort | uniq -d)" ]]; then
+		fail "${CATALOG_BASELINE} records a version more than once" || return 1
+	fi
+	while read -r version expected_digest; do
+		jq -e --arg version "$version" '.versions | has($version)' "$catalog" >/dev/null || fail "Recorded catalog version ${version} was removed; published entries are append-only" || return 1
+		[[ "$(catalog_manifest_digest "$version")" == "$expected_digest" ]] || fail "Published catalog manifest ${version} changed; add a new version instead of mutating a published entry" || return 1
+	done <"$baseline"
+	current_version=$(jq -r '.version' "${ROOT_DIR}/CloudronManifest.json")
+	while read -r version; do
+		[[ "$version" != "$current_version" ]] || continue
+		grep -q "^${version//./\\.} " "$baseline" || missing="${missing}${version} $(catalog_manifest_digest "$version")"$'\n'
+	done < <(jq -r '.versions | to_entries[] | select(.value.publishState == "published") | .key' "$catalog")
+	if [[ -n "$missing" ]]; then
+		printf "Append these lines to %s:\n%s" "$CATALOG_BASELINE" "$missing" >&2
+		fail "Published catalog entries are not recorded in ${CATALOG_BASELINE}" || return 1
+	fi
 	return 0
 }
 
