@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+## [0.1.28] - 2026-11-06
+
+### Changed
+
+- Update the pinned Buzz relay image to upstream `main` commit `2cd40ba`
+  (`sha256:1155b29c...`), after `desktop-v0.5.28`. The relay now advertises
+  `nip-cl` in NIP-11 `supported_extensions`, so current Buzz desktop builds stop
+  showing "This community's relay does not support channel labels or system
+  channels yet."
+- `test/verify-buzz-image.sh` now checks that the pinned image revision contains
+  the upstream NIP-CL relay commit, since no release tag does yet.
+- Upstream added Postgres statement timeout defaults, partition-manager
+  settings and NIP-FI/membership-snapshot flags, all optional and defaulting to
+  off or safe values. No `start.sh`, supervisor or `buzz-ctl` change is needed.
+
 ## [0.1.27] - 2026-11-04
 
 ### Removed

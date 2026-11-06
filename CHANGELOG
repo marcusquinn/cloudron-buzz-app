@@ -1,3 +1,6 @@
+[0.1.28]
+* Update the Buzz relay to an upstream main build that advertises NIP-CL, so Buzz desktop no longer reports that the relay lacks channel labels and system channels.
+
 [0.1.27]
 * Remove the bundled Silo (MinIO) server and the one-time migration; RustFS is the only object store.
 * Installs that never finished migrating to RustFS refuse to start the relay and log recovery steps: restore the pre-update backup, update to 0.1.26, migrate, then update again.

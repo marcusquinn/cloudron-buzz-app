@@ -67,7 +67,7 @@ The upstream source is available in the
 This package deploys one private Buzz relay with:
 
 - Buzz relay, administration CLI, invite surface, and early Git forge from
-  upstream `desktop-v0.5.27`.
+  upstream `main` at `2cd40ba` (after `desktop-v0.5.28`).
 - Cloudron-managed PostgreSQL for authoritative relational and event state.
 - Cloudron-managed Redis for pub/sub, admission control, and replay protection.
 - A private, loopback-only RustFS 1.0.1 server for durable media and Git packfiles.
@@ -479,15 +479,15 @@ entry, and atomically pushes the catalog commit and matching tag. See
 
 ## Version and provenance pins
 
-- **Buzz**: `desktop-v0.5.27`, release commit
-  `7a2fb3cc2d401e91e67d9819741d9025278cbec0`, image revision
-  `af5bb0af488784c3707e99c87e0675a729711a6e`, and image digest
-  `sha256:a212517165be1b34de022345a109f93eab2575ed08ed48439db592ce703eff33`.
+- **Buzz**: upstream `main` commit
+  `2cd40badb85de059a6916206e133da7a0a88fb2e` (after `desktop-v0.5.28`; no
+  release contains NIP-CL relay support yet), and image digest
+  `sha256:1155b29cdcfdcb464ca42c73db7e4dbdc6680775d1c0d6aad26ab737a3fd0cfa`.
   Independent registry inspection confirms its `linux/amd64` child manifest is
-  `sha256:dd998c7499d92cffbf5a71609a5231bd88d3ca0e987f03d1324bd759db57ccb7`.
-  Its OCI revision label matches the image revision, which is the immediate
-  ancestor of the release-only tag commit. Re-run the registry and release-tag
-  checks with `./test/verify-buzz-image.sh`.
+  `sha256:6ff07e58c605ad5c77c5c4ae6ad4ed73bcb89d2734287254ab563ed03a138330`.
+  Its OCI revision label matches the image revision, which contains the NIP-CL
+  relay commit `d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac`. Re-run the registry
+  and ancestry checks with `./test/verify-buzz-image.sh`.
 - **RustFS**: `1.0.1` musl release asset, SHA-256
   `a834096dafa1f1a55825a2cdaf49d006a193978d344f2d508c2be475133738a3`.
 - **Cloudron base**: `6.0.1`, image digest
