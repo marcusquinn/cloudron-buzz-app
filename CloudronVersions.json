@@ -1084,6 +1084,52 @@
             "creationDate": "Wed, 04 Nov 2026 18:40:22 GMT",
             "ts": "Wed, 04 Nov 2026 18:40:22 GMT",
             "publishState": "published"
+        },
+        "0.1.28": {
+            "manifest": {
+                "id": "xyz.buzz.cloudronapp",
+                "title": "Buzz",
+                "author": "Marcus Quinn <marcus@marcusquinn.com>",
+                "description": "Self-hosted, channel-driven workspace where humans and AI agents collaborate with shared context, portable Nostr identities, ACP-compatible runtimes, Git hosting, search, and automation.",
+                "tagline": "Shared workspace for humans and AI agents",
+                "version": "0.1.28",
+                "upstreamVersion": "0.5.28-main.2cd40ba",
+                "healthCheckPath": "/_readiness",
+                "httpPort": 3000,
+                "manifestVersion": 2,
+                "website": "https://buzz.xyz",
+                "contactEmail": "marcus@marcusquinn.com",
+                "documentationUrl": "https://github.com/block/buzz",
+                "minBoxVersion": "10.0.0",
+                "memoryLimit": 1073741824,
+                "addons": {
+                    "localstorage": {},
+                    "postgresql": {},
+                    "redis": {}
+                },
+                "tags": [
+                    "ai",
+                    "collaboration",
+                    "developer-tools",
+                    "git",
+                    "nostr"
+                ],
+                "configurePath": "/repos",
+                "postInstallMessage": "Buzz is running as a private relay and Git forge.\n\nFirst-owner setup:\n1. Open the Buzz desktop or mobile client and create or import an identity. Back up the private nsec securely; never paste it into Cloudron.\n2. Choose **Join a community**. Do not choose **Create a community** or **I own the community**; those options use the hosted Builderlab workflow.\n3. Enter `wss://$CLOUDRON-APP-FQDN`. The initial **Not a member yet** message is expected; copy the identity's public npub.\n4. Promote the public identity with either option:\n   - Cloudron Web Terminal: `/app/code/buzz-ctl set-owner <NPUB_OR_HEX_PUBKEY>`\n   - If the Web Terminal stays on **Connecting**, use the Cloudron CLI from your computer: `cloudron exec --app $CLOUDRON-APP-FQDN -- /app/code/buzz-ctl set-owner <NPUB_OR_HEX_PUBKEY>`\n5. Return to Buzz and select **Try again**, **Connect**, or **Retry**.\n\nNever put an nsec or other private key in either command. Verify with `/app/code/buzz-ctl owner`, `/app/code/buzz-ctl list-members`, and `/app/code/buzz-ctl status`.\n\nThe app URL intentionally serves public NIP-11 metadata and a static invite/Git-forge shell. Team data remains protected by signed Buzz protocol authentication and relay membership. Do not add .htaccess or blanket HTTP Basic Auth; it can break supported clients and health checks.\n\nExternal push delivery and the deployment-admin host are disabled by default.",
+                "changelog": "* Update the Buzz relay to an upstream main build that advertises NIP-CL, so Buzz desktop no longer reports that the relay lacks channel labels and system channels.\n",
+                "icon": "file://icon.png",
+                "iconUrl": "https://raw.githubusercontent.com/marcusquinn/cloudron-buzz-app/main/icon.png",
+                "packagerName": "Marcus Quinn",
+                "packagerUrl": "https://github.com/marcusquinn/cloudron-buzz-app",
+                "packageUrl": "https://github.com/marcusquinn/cloudron-buzz-app",
+                "mediaLinks": [
+                    "https://raw.githubusercontent.com/marcusquinn/cloudron-buzz-app/main/docs/screenshots/buzz-desktop-general-channel-overview.png"
+                ],
+                "dockerImage": "ghcr.io/marcusquinn/cloudron-buzz-app@sha256:994e93dbf8ce34602eb1f3843d2a388e08a590f9b424750c8832c83db077e77c"
+            },
+            "creationDate": "Fri, 06 Nov 2026 23:19:01 GMT",
+            "ts": "Fri, 06 Nov 2026 23:19:01 GMT",
+            "publishState": "published"
         }
     }
 }
