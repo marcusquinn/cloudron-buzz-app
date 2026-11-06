@@ -4,12 +4,13 @@
 
 set -euo pipefail
 
-readonly BUZZ_RELEASE="desktop-v0.5.27"
-readonly BUZZ_RELEASE_REVISION="7a2fb3cc2d401e91e67d9819741d9025278cbec0"
-readonly BUZZ_REVISION="af5bb0af488784c3707e99c87e0675a729711a6e"
-readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-af5bb0a"
-readonly BUZZ_INDEX_DIGEST="sha256:a212517165be1b34de022345a109f93eab2575ed08ed48439db592ce703eff33"
-readonly BUZZ_AMD64_DIGEST="sha256:dd998c7499d92cffbf5a71609a5231bd88d3ca0e987f03d1324bd759db57ccb7"
+# Upstream main snapshot: no desktop release contains NIP-CL relay support yet.
+# desktop-v0.5.28 (f87c1089...) predates d28f6b2f, so the pin is a main commit.
+readonly BUZZ_NIP_CL_REVISION="d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac"
+readonly BUZZ_REVISION="2cd40badb85de059a6916206e133da7a0a88fb2e"
+readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-2cd40ba"
+readonly BUZZ_INDEX_DIGEST="sha256:1155b29cdcfdcb464ca42c73db7e4dbdc6680775d1c0d6aad26ab737a3fd0cfa"
+readonly BUZZ_AMD64_DIGEST="sha256:6ff07e58c605ad5c77c5c4ae6ad4ed73bcb89d2734287254ab563ed03a138330"
 
 github_api() {
 	local endpoint="$1"
@@ -27,11 +28,6 @@ github_api() {
 
 main() {
 	local image_metadata=""
-	local release_object=""
-	local release_object_sha=""
-	local release_object_type=""
-	local release_revision=""
-	local release_tag_depth=0
 	local ancestry_metadata=""
 
 	for command_name in docker gh jq curl; do
@@ -54,37 +50,15 @@ main() {
 		return 1
 	}
 
-	release_object=$(github_api "git/ref/tags/${BUZZ_RELEASE}") || return 1
-	release_object_sha=$(jq --raw-output '.object.sha' <<<"$release_object") || return 1
-	release_object_type=$(jq --raw-output '.object.type' <<<"$release_object") || return 1
-	while [[ "$release_object_type" == "tag" ]]; do
-		release_tag_depth=$((release_tag_depth + 1))
-		if ((release_tag_depth > 10)); then
-			printf "Buzz release %s exceeds the annotated-tag resolution limit\n" "$BUZZ_RELEASE" >&2
-			return 1
-		fi
-		release_object=$(github_api "git/tags/${release_object_sha}") || return 1
-		release_object_sha=$(jq --raw-output '.object.sha' <<<"$release_object") || return 1
-		release_object_type=$(jq --raw-output '.object.type' <<<"$release_object") || return 1
-	done
-	if [[ "$release_object_type" != "commit" ]]; then
-		printf "Buzz release %s resolves to unexpected object type %s\n" "$BUZZ_RELEASE" "$release_object_type" >&2
-		return 1
-	fi
-	release_revision="$release_object_sha"
-	if [[ "$release_revision" != "$BUZZ_RELEASE_REVISION" ]]; then
-		printf "Buzz release %s resolves to unexpected revision %s\n" "$BUZZ_RELEASE" "$release_revision" >&2
-		return 1
-	fi
-	ancestry_metadata=$(github_api "compare/${BUZZ_REVISION}...${BUZZ_RELEASE_REVISION}") || return 1
-	jq --exit-status '.status == "ahead" and .ahead_by == 1 and .behind_by == 0' \
+	ancestry_metadata=$(github_api "compare/${BUZZ_NIP_CL_REVISION}...${BUZZ_REVISION}") || return 1
+	jq --exit-status '(.status == "ahead" or .status == "identical") and .behind_by == 0' \
 		<<<"$ancestry_metadata" >/dev/null || {
-		printf "Buzz image revision is not the immediate ancestor of release %s\n" "$BUZZ_RELEASE" >&2
+		printf "Buzz image revision does not contain NIP-CL relay commit %s\n" "$BUZZ_NIP_CL_REVISION" >&2
 		return 1
 	}
 
-	printf "Verified %s: index %s, linux/amd64 %s, image revision %s, release revision %s\n" \
-		"$BUZZ_RELEASE" "$BUZZ_INDEX_DIGEST" "$BUZZ_AMD64_DIGEST" "$BUZZ_REVISION" "$BUZZ_RELEASE_REVISION"
+	printf "Verified index %s, linux/amd64 %s, image revision %s, contains NIP-CL commit %s\n" \
+		"$BUZZ_INDEX_DIGEST" "$BUZZ_AMD64_DIGEST" "$BUZZ_REVISION" "$BUZZ_NIP_CL_REVISION"
 	return 0
 }
 

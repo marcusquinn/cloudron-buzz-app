@@ -7,7 +7,7 @@ latest package release and its pinned upstream Buzz version.
 
 | Package version | Upstream Buzz | Supported |
 | --- | --- | --- |
-| `0.1.27` | `0.5.27` | Yes |
+| `0.1.28` | `0.5.28-main.2cd40ba` | Yes |
 | Earlier versions | Earlier versions | No |
 
 ## Reporting a vulnerability

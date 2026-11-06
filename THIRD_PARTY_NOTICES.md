@@ -22,14 +22,14 @@ AGPL component remains in the image.
 
 - Project: Buzz by Block, Inc.
 - Source: <https://github.com/block/buzz>
-- Release: `desktop-v0.5.27`
-- Release commit: `7a2fb3cc2d401e91e67d9819741d9025278cbec0`
-- Image revision: `af5bb0af488784c3707e99c87e0675a729711a6e`
-- Image: `ghcr.io/block/buzz:sha-af5bb0a@sha256:a212517165be1b34de022345a109f93eab2575ed08ed48439db592ce703eff33`
-- Linux/amd64 manifest: `sha256:dd998c7499d92cffbf5a71609a5231bd88d3ca0e987f03d1324bd759db57ccb7`
+- Base release: `desktop-v0.5.28` (release-only tag commit `f87c10895ea35a9a2cea629fef1d7532a3fecbc5`)
+- NIP-CL relay commit: `d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac`
+- Image revision: `2cd40badb85de059a6916206e133da7a0a88fb2e`
+- Image: `ghcr.io/block/buzz:sha-2cd40ba@sha256:1155b29cdcfdcb464ca42c73db7e4dbdc6680775d1c0d6aad26ab737a3fd0cfa`
+- Linux/amd64 manifest: `sha256:6ff07e58c605ad5c77c5c4ae6ad4ed73bcb89d2734287254ab563ed03a138330`
 - Provenance: independently registry-inspected; the OCI revision label matches
-  the image revision, which is the immediate ancestor of the upstream
-  `desktop-v0.5.27` release-only tag commit.
+  the image revision, which is an upstream `main` commit containing the NIP-CL
+  relay commit (no release tag contains it yet).
 - License: Apache License 2.0; see `LICENSES/Apache-2.0.txt`.
 
 The Buzz name and related marks belong to their respective owners. This
