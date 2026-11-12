@@ -59,6 +59,8 @@ catalog_manifest_digest() {
 
 # An unrecorded current-version entry must be exactly what the publisher builds:
 # the source manifest, its CHANGELOG section, and an immutable package image.
+# packagerUrl must match the source manifest, except that the already published
+# 0.1.28 entry keeps its frozen repository URL until the next release.
 assert_current_catalog_entry() {
 	local version="$1"
 	local changelog_section=""
@@ -68,7 +70,8 @@ assert_current_catalog_entry() {
 		.versions[$version].manifest as $entry
 		| ($entry.dockerImage | test("^ghcr\\.io/marcusquinn/cloudron-buzz-app@sha256:[0-9a-f]{64}$"))
 		and $entry.changelog == $changelog
-		and ($entry | del(.dockerImage, .changelog)) == ($source[0] | del(.changelog))
+		and ($entry.packagerUrl == $source[0].packagerUrl or ($version == "0.1.28" and $entry.packagerUrl == "https://github.com/marcusquinn/cloudron-buzz-app"))
+		and ($entry | del(.dockerImage, .changelog, .packagerUrl)) == ($source[0] | del(.changelog, .packagerUrl))
 	' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Unrecorded catalog entry ${version} does not match CloudronManifest.json, CHANGELOG and an immutable package image" || return 1
 	return 0
 }
@@ -161,7 +164,7 @@ main() {
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.28\" and .upstreamVersion == \"0.5.28-main.2cd40ba\" and .minBoxVersion == \"10.0.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and .packageUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.1.28\" and .upstreamVersion == \"0.5.28-main.2cd40ba\" and .minBoxVersion == \"10.0.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and .packageUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
