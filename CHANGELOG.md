@@ -4,6 +4,39 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-17
+
+### Changed
+
+- Track Buzz 1.x desktop releases from
+  [block/buzz-app](https://github.com/block/buzz-app). `upstreamVersion` is now
+  the supported desktop release (`1.0.4`) instead of a legacy `desktop-v0.5.x`
+  hybrid, so the upstream monitor compares like with like. The legacy
+  `block/buzz` `desktop-v*` stream only carries the Buzz 0.X app.
+- Update the pinned Buzz relay image to upstream `main` commit `c0ce498`
+  (`sha256:581f5067...`), a qualified image with upstream SLSA provenance and
+  deployment-eligibility attestations. It contains relay revision `630922a`,
+  which Buzz desktop `v1.0.4` pins for its audio client and bundled CLI; the
+  previous relay was 97 commits older than that revision.
+- `test/verify-buzz-image.sh` reads the relay revision pinned by the tracked
+  Buzz app release and checks that the image revision contains it.
+- Upstream adds optional `BUZZ_WORKFLOW_AGENT_MENTIONS`,
+  `BUZZ_MULTI_COMMUNITY_RELAY` and `BUZZ_MEDIA_READ_MODE` settings whose
+  defaults keep current behavior. No `start.sh`, supervisor or `buzz-ctl`
+  change is needed.
+- Record the published 0.1.28 catalog manifest and drop its temporary
+  `packagerUrl` test exception.
+
+### Upgrade notes
+
+- The relay auto-applies migrations `0086`-`0092` at first start, including
+  upstream's trigger-retirement migrations (`0089`-`0091`). Upstream requires a
+  stop build only for fleets where older relays keep serving during the
+  rollout; this package runs one relay, which Cloudron stops before the new
+  version starts, so updating directly from 0.1.28 is safe. Cloudron's
+  pre-update backup is the rollback path; do not downgrade the app without
+  restoring that backup.
+
 ## [0.1.28] - 2026-11-06
 
 ### Changed

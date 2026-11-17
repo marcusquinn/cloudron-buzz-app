@@ -59,15 +59,18 @@ The [Block Engineering introduction](https://engineering.block.xyz/blog/buzz)
 explains the collaboration model, agent identity design, and object-storage Git
 protocol.
 
-The upstream source is available in the
-[block/buzz repository](https://github.com/block/buzz).
+The relay source is available in the
+[block/buzz repository](https://github.com/block/buzz). Buzz 1.x desktop
+releases come from [block/buzz-app](https://github.com/block/buzz-app); this
+package tracks those releases and ships a relay that contains the `block/buzz`
+revision each app release pins.
 
 ## What this package runs
 
 This package deploys one private Buzz relay with:
 
 - Buzz relay, administration CLI, invite surface, and early Git forge from
-  upstream `main` at `2cd40ba` (after `desktop-v0.5.28`).
+  upstream `main` at `c0ce498`, compatible with Buzz desktop `v1.0.4`.
 - Cloudron-managed PostgreSQL for authoritative relational and event state.
 - Cloudron-managed Redis for pub/sub, admission control, and replay protection.
 - A private, loopback-only RustFS 1.0.1 server for durable media and Git packfiles.
@@ -313,7 +316,9 @@ client flow.
 - Cloudron `10.0.0` or newer.
 - 1 GiB memory by default. Increase this for heavy Git or media activity.
 - Cloudron local-storage, PostgreSQL, and Redis addons.
-- A Buzz desktop or mobile client for full chat and agent workflows.
+- A Buzz desktop or mobile client for full chat and agent workflows. Buzz 1.x
+  desktop releases are published at
+  [block/buzz-app releases](https://github.com/block/buzz-app/releases).
 
 ## Install from source (development)
 
@@ -480,14 +485,16 @@ entry, and atomically pushes the catalog commit and matching tag. See
 ## Version and provenance pins
 
 - **Buzz**: upstream `main` commit
-  `2cd40badb85de059a6916206e133da7a0a88fb2e` (after `desktop-v0.5.28`; no
-  release contains NIP-CL relay support yet), and image digest
-  `sha256:1155b29cdcfdcb464ca42c73db7e4dbdc6680775d1c0d6aad26ab737a3fd0cfa`.
-  Independent registry inspection confirms its `linux/amd64` child manifest is
-  `sha256:6ff07e58c605ad5c77c5c4ae6ad4ed73bcb89d2734287254ab563ed03a138330`.
+  `c0ce4982fcbbc379255fde6762487d5808d8d2b4`, and image digest
+  `sha256:581f5067e78ffeaf1b6c4077cb5d31a6923ff89755c0faa295f5b9f9ec1ae31a`
+  (upstream qualified, with SLSA provenance and deployment-eligibility
+  attestations). Independent registry inspection confirms its `linux/amd64`
+  child manifest is
+  `sha256:d46200c80b010fb555811683df5d101592d9495cb0cfdfc3e330fffd72a6ab4e`.
   Its OCI revision label matches the image revision, which contains the NIP-CL
-  relay commit `d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac`. Re-run the registry
-  and ancestry checks with `./test/verify-buzz-image.sh`.
+  relay commit `d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac` and the relay revision
+  `630922a9e1f891380a61f5b7d726d05ca948cc64` pinned by Buzz desktop `v1.0.4`.
+  Re-run the registry and ancestry checks with `./test/verify-buzz-image.sh`.
 - **RustFS**: `1.0.1` musl release asset, SHA-256
   `a834096dafa1f1a55825a2cdaf49d006a193978d344f2d508c2be475133738a3`.
 - **Cloudron base**: `6.0.1`, image digest
