@@ -21,15 +21,19 @@ AGPL component remains in the image.
 ## Buzz
 
 - Project: Buzz by Block, Inc.
-- Source: <https://github.com/block/buzz>
-- Base release: `desktop-v0.5.28` (release-only tag commit `f87c10895ea35a9a2cea629fef1d7532a3fecbc5`)
+- Source: <https://github.com/block/buzz> (relay, admin CLI, pairing relay and
+  web assets)
+- Supported desktop app: Buzz `v1.0.4` from <https://github.com/block/buzz-app>,
+  which pins relay revision `630922a9e1f891380a61f5b7d726d05ca948cc64`
 - NIP-CL relay commit: `d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac`
-- Image revision: `2cd40badb85de059a6916206e133da7a0a88fb2e`
-- Image: `ghcr.io/block/buzz:sha-2cd40ba@sha256:1155b29cdcfdcb464ca42c73db7e4dbdc6680775d1c0d6aad26ab737a3fd0cfa`
-- Linux/amd64 manifest: `sha256:6ff07e58c605ad5c77c5c4ae6ad4ed73bcb89d2734287254ab563ed03a138330`
+- Image revision: `c0ce4982fcbbc379255fde6762487d5808d8d2b4`
+- Image: `ghcr.io/block/buzz:sha-c0ce498@sha256:581f5067e78ffeaf1b6c4077cb5d31a6923ff89755c0faa295f5b9f9ec1ae31a`
+- Linux/amd64 manifest: `sha256:d46200c80b010fb555811683df5d101592d9495cb0cfdfc3e330fffd72a6ab4e`
 - Provenance: independently registry-inspected; the OCI revision label matches
-  the image revision, which is an upstream `main` commit containing the NIP-CL
-  relay commit (no release tag contains it yet).
+  the image revision, an upstream `main` commit that contains both the NIP-CL
+  relay commit and the Buzz app's pinned relay revision. Upstream's SLSA
+  provenance and deployment-eligibility attestations were verified for this
+  index and revision.
 - License: Apache License 2.0; see `LICENSES/Apache-2.0.txt`.
 
 The Buzz name and related marks belong to their respective owners. This
