@@ -153,6 +153,50 @@ check_release_workflows() {
 	return 0
 }
 
+# Read one `readonly NAME="value"` constant from test/verify-buzz-image.sh.
+# Those constants are the single record of the Buzz companion image; the signed
+# standing release policy proves them against the upstream release, registry
+# and attestations, so this test checks consistency rather than repeating them.
+verify_constant() {
+	local name="$1"
+	local value=""
+	value="$(sed -nE "s/^readonly ${name}=\"([^\"]*)\"\$/\\1/p" "${ROOT_DIR}/test/verify-buzz-image.sh")"
+	if [[ -z "$value" || "$value" == *$'\n'* ]]; then
+		fail "test/verify-buzz-image.sh must define exactly one ${name}" || return 1
+	fi
+	printf '%s\n' "$value"
+	return 0
+}
+
+assert_buzz_image_contract() {
+	local upstream_version=""
+	local app_release=""
+	local relay_revision=""
+	local revision=""
+	local image=""
+	local index_digest=""
+	local amd64_digest=""
+
+	upstream_version="$(jq -r '.upstreamVersion' "${ROOT_DIR}/CloudronManifest.json")" || return 1
+	app_release="$(verify_constant BUZZ_APP_RELEASE)" || return 1
+	relay_revision="$(verify_constant BUZZ_APP_RELAY_REVISION)" || return 1
+	revision="$(verify_constant BUZZ_REVISION)" || return 1
+	image="$(verify_constant BUZZ_IMAGE)" || return 1
+	index_digest="$(verify_constant BUZZ_INDEX_DIGEST)" || return 1
+	amd64_digest="$(verify_constant BUZZ_AMD64_DIGEST)" || return 1
+
+	[[ "$app_release" == "v${upstream_version}" ]] ||
+		fail "BUZZ_APP_RELEASE ${app_release} is not manifest upstreamVersion ${upstream_version}" || return 1
+	[[ "$relay_revision" =~ ^[0-9a-f]{40}$ && "$revision" =~ ^[0-9a-f]{40}$ ]] ||
+		fail "Buzz relay and image revisions must be full commit SHAs" || return 1
+	[[ "$image" == "ghcr.io/block/buzz:sha-${revision:0:7}" ]] ||
+		fail "BUZZ_IMAGE ${image} is not the image for BUZZ_REVISION" || return 1
+	[[ "$index_digest" =~ ^sha256:[0-9a-f]{64}$ && "$amd64_digest" =~ ^sha256:[0-9a-f]{64}$ ]] ||
+		fail "Buzz image digests must be sha256 digests" || return 1
+	assert_contains Dockerfile "FROM --platform=linux/amd64 ${image}@${index_digest} AS buzz" || return 1
+	return 0
+}
+
 main() {
 	local required_file=""
 	local shell_script=""
@@ -190,7 +234,7 @@ main() {
 	assert_contains README.md "[SECURITY.md](SECURITY.md)" || return 1
 	assert_contains CloudronManifest.json "wss://\$CLOUDRON-APP-FQDN" || return 1
 	assert_contains SECURITY.md "GitHub's private vulnerability reporting" || return 1
-	assert_contains SECURITY.md "| \`0.2.0\` | \`1.0.4\` (relay \`main.c0ce498\`) | Yes |" || return 1
+	assert_contains SECURITY.md "| Latest: \`version\` in \`CloudronManifest.json\` | \`upstreamVersion\` in \`CloudronManifest.json\`" || return 1
 
 	if git -C "$ROOT_DIR" ls-files -s | grep -Eq '^120000 '; then
 		fail "Published source must not contain tracked symlinks" || return 1
@@ -202,21 +246,12 @@ main() {
 
 	check_release_workflows || return 1
 
-	assert_contains Dockerfile "FROM --platform=linux/amd64 ghcr.io/block/buzz:sha-c0ce498@sha256:581f5067e78ffeaf1b6c4077cb5d31a6923ff89755c0faa295f5b9f9ec1ae31a AS buzz" || return 1
-	assert_contains THIRD_PARTY_NOTICES.md "ghcr.io/block/buzz:sha-c0ce498@sha256:581f5067e78ffeaf1b6c4077cb5d31a6923ff89755c0faa295f5b9f9ec1ae31a" || return 1
-	assert_contains THIRD_PARTY_NOTICES.md "Linux/amd64 manifest: \`sha256:d46200c80b010fb555811683df5d101592d9495cb0cfdfc3e330fffd72a6ab4e\`" || return 1
+	assert_buzz_image_contract || return 1
+	assert_contains THIRD_PARTY_NOTICES.md "the \`readonly\` constants in \`test/verify-buzz-image.sh\`" || return 1
 	assert_contains THIRD_PARTY_NOTICES.md 'Provenance: independently registry-inspected; the OCI revision label matches' || return 1
-	assert_contains THIRD_PARTY_NOTICES.md "Buzz \`v1.0.4\` from <https://github.com/block/buzz-app>" || return 1
 	assert_contains THIRD_PARTY_NOTICES.md "- NIP-CL relay commit: \`d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac\`" || return 1
-	assert_contains THIRD_PARTY_NOTICES.md "- Image revision: \`c0ce4982fcbbc379255fde6762487d5808d8d2b4\`" || return 1
 	assert_contains README.md './test/verify-buzz-image.sh' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_APP_RELEASE="v1.0.4"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_APP_RELAY_REVISION="630922a9e1f891380a61f5b7d726d05ca948cc64"' || return 1
 	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_NIP_CL_REVISION="d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_REVISION="c0ce4982fcbbc379255fde6762487d5808d8d2b4"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_IMAGE="ghcr.io/block/buzz:sha-c0ce498"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_INDEX_DIGEST="sha256:581f5067e78ffeaf1b6c4077cb5d31a6923ff89755c0faa295f5b9f9ec1ae31a"' || return 1
-	assert_contains test/verify-buzz-image.sh 'readonly BUZZ_AMD64_DIGEST="sha256:d46200c80b010fb555811683df5d101592d9495cb0cfdfc3e330fffd72a6ab4e"' || return 1
 	assert_contains test/verify-buzz-image.sh "docker buildx imagetools inspect" || return 1
 	assert_contains test/verify-buzz-image.sh 'org.opencontainers.image.revision' || return 1
 	# GH#92: the Silo/MinIO server and mcli client are no longer shipped.

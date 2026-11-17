@@ -7,7 +7,7 @@ latest package release and its pinned upstream Buzz version.
 
 | Package version | Upstream Buzz | Supported |
 | --- | --- | --- |
-| `0.2.0` | `1.0.4` (relay `main.c0ce498`) | Yes |
+| Latest: `version` in `CloudronManifest.json` | `upstreamVersion` in `CloudronManifest.json` (relay image pinned in `Dockerfile`) | Yes |
 | Earlier versions | Earlier versions | No |
 
 ## Reporting a vulnerability

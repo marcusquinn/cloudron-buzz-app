@@ -23,12 +23,12 @@ AGPL component remains in the image.
 - Project: Buzz by Block, Inc.
 - Source: <https://github.com/block/buzz> (relay, admin CLI, pairing relay and
   web assets)
-- Supported desktop app: Buzz `v1.0.4` from <https://github.com/block/buzz-app>,
-  which pins relay revision `630922a9e1f891380a61f5b7d726d05ca948cc64`
+- Supported desktop app: the Buzz release from <https://github.com/block/buzz-app>
+  named by `upstreamVersion` in `CloudronManifest.json`
 - NIP-CL relay commit: `d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac`
-- Image revision: `c0ce4982fcbbc379255fde6762487d5808d8d2b4`
-- Image: `ghcr.io/block/buzz:sha-c0ce498@sha256:581f5067e78ffeaf1b6c4077cb5d31a6923ff89755c0faa295f5b9f9ec1ae31a`
-- Linux/amd64 manifest: `sha256:d46200c80b010fb555811683df5d101592d9495cb0cfdfc3e330fffd72a6ab4e`
+- Image, image revision, linux/amd64 manifest and the desktop release's pinned
+  relay revision: the `readonly` constants in `test/verify-buzz-image.sh`; the
+  `Dockerfile` pins the same `ghcr.io/block/buzz` image by digest
 - Provenance: independently registry-inspected; the OCI revision label matches
   the image revision, an upstream `main` commit that contains both the NIP-CL
   relay commit and the Buzz app's pinned relay revision. Upstream's SLSA

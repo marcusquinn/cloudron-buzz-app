@@ -69,8 +69,10 @@ revision each app release pins.
 
 This package deploys one private Buzz relay with:
 
-- Buzz relay, administration CLI, invite surface, and early Git forge from
-  upstream `main` at `c0ce498`, compatible with Buzz desktop `v1.0.4`.
+- Buzz relay, administration CLI, invite surface, and early Git forge from an
+  upstream `main` image compatible with the Buzz desktop release named by
+  `upstreamVersion` in [CloudronManifest.json](CloudronManifest.json) (see
+  [Version and provenance pins](#version-and-provenance-pins)).
 - Cloudron-managed PostgreSQL for authoritative relational and event state.
 - Cloudron-managed Redis for pub/sub, admission control, and replay protection.
 - A private, loopback-only RustFS 1.0.1 server for durable media and Git packfiles.
@@ -484,17 +486,16 @@ entry, and atomically pushes the catalog commit and matching tag. See
 
 ## Version and provenance pins
 
-- **Buzz**: upstream `main` commit
-  `c0ce4982fcbbc379255fde6762487d5808d8d2b4`, and image digest
-  `sha256:581f5067e78ffeaf1b6c4077cb5d31a6923ff89755c0faa295f5b9f9ec1ae31a`
-  (upstream qualified, with SLSA provenance and deployment-eligibility
-  attestations). Independent registry inspection confirms its `linux/amd64`
-  child manifest is
-  `sha256:d46200c80b010fb555811683df5d101592d9495cb0cfdfc3e330fffd72a6ab4e`.
-  Its OCI revision label matches the image revision, which contains the NIP-CL
-  relay commit `d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac` and the relay revision
-  `630922a9e1f891380a61f5b7d726d05ca948cc64` pinned by Buzz desktop `v1.0.4`.
-  Re-run the registry and ancestry checks with `./test/verify-buzz-image.sh`.
+- **Buzz**: the `readonly` constants at the top of
+  [test/verify-buzz-image.sh](test/verify-buzz-image.sh) are the single record of
+  the supported Buzz desktop release, the relay revision it pins, the upstream
+  `main` image revision, its image digest and its `linux/amd64` child manifest;
+  the `Dockerfile` pins the same image by digest. The image is upstream
+  qualified, with SLSA provenance and deployment-eligibility attestations. Its
+  OCI revision label matches the image revision, which contains the NIP-CL relay
+  commit `d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac` and the relay revision pinned
+  by the supported desktop release. Re-run the registry and ancestry checks with
+  `./test/verify-buzz-image.sh`.
 - **RustFS**: `1.0.1` musl release asset, SHA-256
   `a834096dafa1f1a55825a2cdaf49d006a193978d344f2d508c2be475133738a3`.
 - **Cloudron base**: `6.0.1`, image digest
