@@ -1176,6 +1176,53 @@
             "creationDate": "Tue, 17 Nov 2026 09:35:43 GMT",
             "ts": "Tue, 17 Nov 2026 09:35:43 GMT",
             "publishState": "published"
+        },
+        "0.2.1": {
+            "manifest": {
+                "id": "xyz.buzz.cloudronapp",
+                "title": "Buzz",
+                "author": "Marcus Quinn <marcus@marcusquinn.com>",
+                "description": "Self-hosted, channel-driven workspace where humans and AI agents collaborate with shared context, portable Nostr identities, ACP-compatible runtimes, Git hosting, search, and automation.",
+                "tagline": "Shared workspace for humans and AI agents",
+                "version": "0.2.1",
+                "upstreamVersion": "1.0.5",
+                "healthCheckPath": "/_readiness",
+                "httpPort": 3000,
+                "manifestVersion": 2,
+                "website": "https://buzz.xyz",
+                "contactEmail": "marcus@marcusquinn.com",
+                "documentationUrl": "https://github.com/block/buzz",
+                "minBoxVersion": "10.0.0",
+                "memoryLimit": 1073741824,
+                "multiDomain": true,
+                "addons": {
+                    "localstorage": {},
+                    "postgresql": {},
+                    "redis": {}
+                },
+                "tags": [
+                    "ai",
+                    "collaboration",
+                    "developer-tools",
+                    "git",
+                    "nostr"
+                ],
+                "configurePath": "/repos",
+                "postInstallMessage": "Buzz is running as a private relay and Git forge.\n\nFirst-owner setup:\n1. Open the Buzz desktop or mobile client and create or import an identity. Back up the private nsec securely; never paste it into Cloudron.\n2. Choose **Join a community**. Do not choose **Create a community** or **I own the community**; those options use the hosted Builderlab workflow.\n3. Enter `wss://$CLOUDRON-APP-FQDN`. The initial **Not a member yet** message is expected; copy the identity's public npub.\n4. Promote the public identity with either option:\n   - Cloudron Web Terminal: `/app/code/buzz-ctl set-owner <NPUB_OR_HEX_PUBKEY>`\n   - If the Web Terminal stays on **Connecting**, use the Cloudron CLI from your computer: `cloudron exec --app $CLOUDRON-APP-FQDN -- /app/code/buzz-ctl set-owner <NPUB_OR_HEX_PUBKEY>`\n5. Return to Buzz and select **Try again**, **Connect**, or **Retry**.\n\nNever put an nsec or other private key in either command. Verify with `/app/code/buzz-ctl owner`, `/app/code/buzz-ctl list-members`, and `/app/code/buzz-ctl status`.\n\nThe app URL intentionally serves public NIP-11 metadata and a static invite/Git-forge shell. Team data remains protected by signed Buzz protocol authentication and relay membership. Do not add .htaccess or blanket HTTP Basic Auth; it can break supported clients and health checks.\n\nExternal push delivery is disabled. The deployment-admin dashboard (moderation and in-app feedback) is off until you add a dedicated Cloudron alias domain to this app and run `/app/code/buzz-ctl admin-enable <ALIAS_DOMAIN>`; every admin request then requires a NIP-98 signature from the owner or a staffed operator.",
+                "changelog": "* Update the supported Buzz desktop release to 1.0.5. The relay is unchanged: 1.0.5 pins the same relay revision as 1.0.4.\n* Add an opt-in deployment-admin dashboard for moderation and in-app feedback. Add a Cloudron alias domain, then run buzz-ctl admin-enable with that alias. Every admin request requires a NIP-98 signature from the owner or a staffed operator.\n* Add buzz-ctl feedback-list to read in-app feedback, which goes to this deployment's operator, not the Buzz team.\n* Admin settings in the app environment (BUZZ_ADMIN_*) are now ignored, so they can no longer enable unauthenticated admin access.\n",
+                "icon": "file://icon.png",
+                "iconUrl": "https://raw.githubusercontent.com/marcusquinn/cloudron-buzz-app/main/icon.png",
+                "packagerName": "Marcus Quinn",
+                "packagerUrl": "https://github.com/marcusquinn",
+                "packageUrl": "https://github.com/marcusquinn/cloudron-buzz-app",
+                "mediaLinks": [
+                    "https://raw.githubusercontent.com/marcusquinn/cloudron-buzz-app/main/docs/screenshots/buzz-desktop-general-channel-overview.png"
+                ],
+                "dockerImage": "ghcr.io/marcusquinn/cloudron-buzz-app@sha256:0316afdd41779bd0d149c16c027e0542137605bdddcdc3404ccf3f36fa00cae4"
+            },
+            "creationDate": "Wed, 18 Nov 2026 19:45:27 GMT",
+            "ts": "Wed, 18 Nov 2026 19:45:28 GMT",
+            "publishState": "published"
         }
     }
 }
