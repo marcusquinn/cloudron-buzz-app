@@ -9,10 +9,50 @@ readonly STORAGE_ENDPOINT="http://127.0.0.1:9100"
 readonly S3_CURL_CONFIG="${RUN_DIR}/s3/curl.conf"
 readonly S3_BUCKET="buzz-data"
 readonly FEATURE_ENABLED="true"
+readonly ADMIN_HOST_FILE="/app/data/config/admin-host"
+# The relay is public, so the admin API must always require NIP-98 signatures.
+readonly ADMIN_AUTH_MODE="nip98"
+readonly FQDN_PATTERN='^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$'
 
 log() {
 	local message="$1"
 	printf "==> %s\n" "$message"
+	return 0
+}
+
+warn() {
+	local message="$1"
+	printf "WARNING: %s\n" "$message" >&2
+	return 0
+}
+
+# Prints the opted-in deployment-admin host only while it is still a Cloudron
+# alias of this app. Anything else leaves the admin surface disabled.
+configured_admin_host() {
+	local host=""
+	local alias_domain=""
+	local alias_domains=()
+
+	[[ -e "$ADMIN_HOST_FILE" || -L "$ADMIN_HOST_FILE" ]] || return 0
+	if [[ -L "$ADMIN_HOST_FILE" || ! -f "$ADMIN_HOST_FILE" ]]; then
+		warn "Ignoring ${ADMIN_HOST_FILE}: not a regular file. Run buzz-ctl admin-disable."
+		return 0
+	fi
+	host=$(<"$ADMIN_HOST_FILE")
+	host="${host//[[:space:]]/}"
+	if [[ ! "$host" =~ $FQDN_PATTERN || "$host" == "${CLOUDRON_APP_DOMAIN:-}" ]]; then
+		warn "Ignoring ${ADMIN_HOST_FILE}: not a valid alias domain. Run buzz-ctl admin-disable."
+		return 0
+	fi
+	IFS=',' read -r -a alias_domains <<<"${CLOUDRON_ALIAS_DOMAINS:-}"
+	for alias_domain in "${alias_domains[@]}"; do
+		alias_domain="${alias_domain//[[:space:]]/}"
+		if [[ "${alias_domain,,}" == "$host" ]]; then
+			printf "%s" "$host"
+			return 0
+		fi
+	done
+	warn "Deployment-admin host ${host} is no longer a Cloudron alias of this app; the admin dashboard stays disabled. Re-add the alias or run buzz-ctl admin-disable."
 	return 0
 }
 
@@ -103,6 +143,7 @@ main() {
 	local git_hook_secret=""
 	local storage_access_key=""
 	local storage_secret_key=""
+	local admin_host=""
 
 	validate_service_urls || return 1
 	relay_private_key=$(read_secret /app/data/config/relay-private-key "relay private key") || return 1
@@ -149,6 +190,19 @@ main() {
 	export BUZZ_MEDIA_BASE_URL="https://${CLOUDRON_APP_DOMAIN}/media"
 	export RUST_LOG="${RUST_LOG:-buzz_relay=info,buzz_db=info,buzz_media=info}"
 	export HOME="$RUN_DIR"
+
+	# Container environment overrides must never select the admin surface or
+	# its authentication mode. The package never sets RELAY_OPERATOR_PUBKEYS:
+	# any value disables owner-fallback Operator access.
+	unset BUZZ_ADMIN_HOST BUZZ_ADMIN_AUTH BUZZ_ADMIN_TOKEN
+	admin_host=$(configured_admin_host)
+	if [[ -n "$admin_host" ]]; then
+		export BUZZ_ADMIN_HOST="$admin_host"
+		export BUZZ_ADMIN_AUTH="$ADMIN_AUTH_MODE"
+		log "Deployment-admin dashboard enabled at https://${admin_host} (NIP-98)"
+	else
+		log "Deployment-admin host disabled"
+	fi
 
 	ensure_private_bucket "$storage_access_key" "$storage_secret_key" || return 1
 	log "Launching Buzz relay at wss://${CLOUDRON_APP_DOMAIN}"

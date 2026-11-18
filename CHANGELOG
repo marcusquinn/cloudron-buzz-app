@@ -1,5 +1,8 @@
 [0.2.1]
 * Update the supported Buzz desktop release to 1.0.5. The relay is unchanged: 1.0.5 pins the same relay revision as 1.0.4.
+* Add an opt-in deployment-admin dashboard for moderation and in-app feedback. Add a Cloudron alias domain, then run buzz-ctl admin-enable with that alias. Every admin request requires a NIP-98 signature from the owner or a staffed operator.
+* Add buzz-ctl feedback-list to read in-app feedback, which goes to this deployment's operator, not the Buzz team.
+* Admin settings in the app environment (BUZZ_ADMIN_*) are now ignored, so they can no longer enable unauthenticated admin access.
 
 [0.2.0]
 * Support the Buzz 1.x desktop app: update the relay to an upstream main build that contains the relay revision Buzz 1.0.4 is built against.
