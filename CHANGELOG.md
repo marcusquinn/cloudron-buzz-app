@@ -4,6 +4,30 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-18
+
+### Added
+
+- Opt-in deployment-admin dashboard on a dedicated Cloudron alias domain
+  (GH#142). The manifest enables `multiDomain`; `buzz-ctl admin-enable
+  <alias>`, `admin-disable`, and `admin-status` manage it. The admin API always
+  uses NIP-98 authentication, with owner-fallback Operator access.
+- `buzz-ctl feedback-list [--limit 1-1000]` lists in-app product feedback,
+  which goes to the deployment operator rather than the Buzz team.
+
+### Changed
+
+- Track Buzz desktop release `1.0.5`. The relay is unchanged: `1.0.5` pins the
+  same relay revision as `1.0.4`.
+
+### Security
+
+- The relay launcher ignores `BUZZ_ADMIN_HOST`, `BUZZ_ADMIN_AUTH`, and
+  `BUZZ_ADMIN_TOKEN` from the container environment. Previously,
+  `cloudron env set` could enable the unauthenticated admin mode on the public
+  relay. The admin host is honoured only while it remains a Cloudron alias of
+  the app.
+
 ## [0.2.0] - 2026-11-17
 
 ### Changed

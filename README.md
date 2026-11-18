@@ -281,8 +281,9 @@ The package intentionally differs from Buzz development defaults:
 - RustFS binds only to loopback, disables its console, and startup verifies that
   the bucket refuses anonymous requests.
 - The external Buzz APNs push gateway is disabled.
-- The bundled deployment-admin SPA is intentionally disabled until a separate
-  VPN-only or IP-restricted admin hostname is configured.
+- The bundled deployment-admin dashboard is off until the operator opts in on a
+  dedicated Cloudron alias domain. When enabled, its API always requires NIP-98
+  signatures; `BUZZ_ADMIN_*` environment overrides are ignored.
 - Audit logging and the Git object-store conformance gate are enabled.
 
 No startup or operator command prints a private key or credential.
@@ -403,6 +404,10 @@ Run commands through the Cloudron Web Terminal or `cloudron exec`:
 /app/code/buzz-ctl add-member "<NPUB_OR_HEX_PUBKEY>" admin
 /app/code/buzz-ctl remove-member "<NPUB_OR_HEX_PUBKEY>"
 /app/code/buzz-ctl list-members
+/app/code/buzz-ctl admin-enable "<ALIAS_DOMAIN>"
+/app/code/buzz-ctl admin-disable
+/app/code/buzz-ctl admin-status
+/app/code/buzz-ctl feedback-list [--limit 1-1000]
 /app/code/buzz-ctl status
 /app/code/buzz-ctl storage-status
 /app/code/buzz-ctl storage-purge-legacy [--confirm]
@@ -411,18 +416,62 @@ Run commands through the Cloudron Web Terminal or `cloudron exec`:
 `buzz-ctl` supplies the upstream `buzz-admin` CLI with Cloudron PostgreSQL and
 Redis settings. It has no command that displays the relay private key.
 
+### In-app feedback
+
+Feedback that members send from the Buzz desktop or mobile app goes to this
+deployment's operator, not to the Buzz team. Read it from the command line:
+
+```bash
+/app/code/buzz-ctl feedback-list --limit 20
+```
+
+The output is JSON. `--limit` accepts 1 to 1000 and defaults to 100. To view
+attachments and change feedback status, use the deployment-admin dashboard.
+
 ### Deployment administration
 
-Buzz also ships a read-only deployment-admin SPA. This package copies the SPA
-into the image but intentionally leaves it disabled: upstream authorizes it by
-an exact dedicated host and same-origin headers, not by per-user application
-authentication.
+Buzz ships a deployment-admin dashboard for moderation: reports, in-app
+feedback and attachments, member restrictions, and operator staffing. This
+package keeps it off until you opt in, and then serves it only on a dedicated
+Cloudron alias domain:
 
-Do not expose the deployment-admin SPA on the public relay hostname. Enabling
-it safely requires a separate private admin hostname protected by a VPN or
-IP-restricted ingress, setting `BUZZ_ADMIN_HOST` to that exact host, and
-verifying that public hosts cannot reach it. Until that ingress exists, use
-`buzz-ctl` for operator administration.
+1. In the Cloudron dashboard, open the app's **Location** settings and add an
+   alias domain, for example `buzz-admin.example.com`. Cloudron reconfigures
+   the app and issues a certificate for the alias.
+2. Enable the dashboard on that alias:
+
+   ```bash
+   /app/code/buzz-ctl admin-enable buzz-admin.example.com
+   ```
+
+   The command restarts only the relay and confirms that the relay advertises
+   `https://buzz-admin.example.com` as its `admin_api`.
+3. Open `https://buzz-admin.example.com` in a browser with a NIP-07 signing
+   extension that holds the owner identity, or use the Admin Console in Buzz
+   desktop, which discovers the dashboard from the relay's NIP-11 metadata.
+
+Security model:
+
+- Every admin API request requires a fresh NIP-98 signature bound to the admin
+  host, with a short validity window and replay protection. The package always
+  sets `BUZZ_ADMIN_AUTH=nip98` and ignores `BUZZ_ADMIN_HOST`, `BUZZ_ADMIN_AUTH`
+  and `BUZZ_ADMIN_TOKEN` from the container environment, so
+  `cloudron env set` cannot enable the unauthenticated mode.
+- The relay owner has Operator access. `set-owner` moves that access to the new
+  owner; the previous owner keeps relay `admin` membership but not deployment
+  Operator access. Operators can staff moderators from the dashboard. Setting
+  `RELAY_OPERATOR_PUBKEYS` in the environment replaces owner-fallback access
+  with that list.
+- Admin routes are served only on the configured alias. The relay domain keeps
+  serving the relay, invite, Git, and media surfaces unchanged.
+- The relay's public NIP-11 document advertises the admin origin while the
+  dashboard is enabled.
+- If you remove the alias without running `admin-disable`, the relay logs a
+  warning and keeps the dashboard off.
+
+To turn the dashboard off, run `/app/code/buzz-ctl admin-disable`, then remove
+the alias. `admin-status` shows the configured host, the current aliases, and
+the active `admin_api`.
 
 ## Persistence and backups
 
@@ -434,8 +483,8 @@ verifying that public hosts cannot reach it. Until that ingress exists, use
 - **`/app/data/minio`** (upgraded installs only): retained pre-migration Silo
   objects, unused at runtime and still backed up. Remove with
   `buzz-ctl storage-purge-legacy --confirm`.
-- **`/app/data/config`**: stable relay identity and generated service secrets.
-  Cloudron backs it up with local storage.
+- **`/app/data/config`**: stable relay identity, generated service secrets, and
+  the opt-in `admin-host` setting. Cloudron backs it up with local storage.
 - **`/run/buzz/git-repos`**: disposable hydrated Git workspaces.
 - **`/run/buzz/git-pack-cache`**: disposable immutable pack cache.
 
@@ -512,8 +561,8 @@ pinned Cloudron base image and prevent mixed-architecture binaries.
 - The browser UI does not replace the desktop or mobile clients.
 - This package runs one relay and disables the experimental multi-relay mesh.
 - External mobile push delivery is disabled by default.
-- The bundled deployment-admin SPA remains intentionally unreachable until a
-  private admin hostname and restricted ingress are configured.
+- The deployment-admin dashboard needs a dedicated Cloudron alias domain and a
+  NIP-07 browser extension or Buzz desktop to sign in.
 - Public App Store submission remains deferred until private lifecycle,
   backup/restore, browser, Nostr, Git, media, and ACP tests pass.
 

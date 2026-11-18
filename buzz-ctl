@@ -5,6 +5,9 @@
 set -euo pipefail
 
 readonly OWNER_FILE="/app/data/config/owner-public-key"
+readonly ADMIN_HOST_FILE="/app/data/config/admin-host"
+readonly FQDN_PATTERN='^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$'
+readonly RELAY_LOCAL_URL="http://127.0.0.1:3000"
 readonly RELAY_PUBLIC_KEY_FILE="/app/data/config/relay-public-key"
 readonly RELAY_PRIVATE_KEY_FILE="/app/data/config/relay-private-key"
 readonly SUPERVISOR_CONFIG="/app/code/supervisord.conf"
@@ -53,21 +56,30 @@ load_admin_environment() {
 	return 0
 }
 
+# Atomically replaces a private config file owned by the relay user.
+write_config_file() {
+	local file_path="$1"
+	local value="$2"
+	local temporary_file=""
+
+	if [[ -L "$file_path" ]]; then
+		fail "Refusing symlinked ${file_path}" || return 1
+	fi
+	temporary_file=$(mktemp "${file_path}.tmp.XXXXXX") || return 1
+	chmod 0600 "$temporary_file"
+	printf "%s\n" "$value" >"$temporary_file"
+	chown cloudron:cloudron "$temporary_file"
+	mv -f "$temporary_file" "$file_path"
+	return 0
+}
+
 write_owner() {
 	local owner_pubkey="$1"
-	local temporary_file=""
 
 	if [[ ! "$owner_pubkey" =~ ^[0-9a-f]{64}$ ]]; then
 		fail "Normalized owner key is invalid" || return 1
 	fi
-	if [[ -L "$OWNER_FILE" ]]; then
-		fail "Refusing symlinked owner file" || return 1
-	fi
-	temporary_file=$(mktemp "${OWNER_FILE}.tmp.XXXXXX") || return 1
-	chmod 0600 "$temporary_file"
-	printf "%s\n" "$owner_pubkey" >"$temporary_file"
-	chown cloudron:cloudron "$temporary_file"
-	mv -f "$temporary_file" "$OWNER_FILE"
+	write_config_file "$OWNER_FILE" "$owner_pubkey" || return 1
 	return 0
 }
 
@@ -232,6 +244,120 @@ storage_purge_legacy() {
 	return 0
 }
 
+is_alias_domain() {
+	local host="$1"
+	local alias_domain=""
+	local alias_domains=()
+
+	IFS=',' read -r -a alias_domains <<<"${CLOUDRON_ALIAS_DOMAINS:-}"
+	for alias_domain in "${alias_domains[@]}"; do
+		alias_domain="${alias_domain//[[:space:]]/}"
+		[[ "${alias_domain,,}" != "$host" ]] || return 0
+	done
+	return 1
+}
+
+# Prints the admin_api origin the running relay advertises in NIP-11, if any.
+active_admin_api() {
+	curl --fail --silent --show-error --max-time 5 \
+		--header 'Accept: application/nostr+json' "${RELAY_LOCAL_URL}/" |
+		jq -r '.admin_api // empty' || return 1
+	return 0
+}
+
+restart_relay() {
+	/usr/bin/supervisorctl --configuration "$SUPERVISOR_CONFIG" restart buzz-relay || return 1
+	wait_for_relay || return 1
+	return 0
+}
+
+admin_enable() {
+	local requested_host="$1"
+	local host="${requested_host,,}"
+	local advertised=""
+
+	host="${host%.}"
+	if [[ ! "$host" =~ $FQDN_PATTERN ]]; then
+		fail "Admin host must be a fully qualified domain name" || return 1
+	fi
+	if [[ "$host" == "${CLOUDRON_APP_DOMAIN:-}" ]]; then
+		fail "The admin host must be a dedicated alias, not the relay domain ${host}" || return 1
+	fi
+	if ! is_alias_domain "$host"; then
+		fail "${host} is not a Cloudron alias of this app. Add it under the app's Location settings first; current aliases: ${CLOUDRON_ALIAS_DOMAINS:-none}" || return 1
+	fi
+	exec 8>/run/buzz/storage-migration.lock
+	flock -n 8 || { fail "Storage setup, legacy purge, owner or admin change is in progress" || return 1; }
+	write_config_file "$ADMIN_HOST_FILE" "$host" || return 1
+	restart_relay || return 1
+	advertised=$(active_admin_api) || return 1
+	if [[ "$advertised" != "https://${host}" ]]; then
+		fail "The relay does not advertise https://${host} (got '${advertised:-none}'); check the relay log" || return 1
+	fi
+	printf "Deployment-admin dashboard enabled at https://%s\n" "$host"
+	printf "Sign in with the owner identity through a NIP-07 browser extension or the Buzz desktop Admin Console.\n"
+	return 0
+}
+
+admin_disable() {
+	local advertised=""
+
+	exec 8>/run/buzz/storage-migration.lock
+	flock -n 8 || { fail "Storage setup, legacy purge, owner or admin change is in progress" || return 1; }
+	if [[ ! -e "$ADMIN_HOST_FILE" && ! -L "$ADMIN_HOST_FILE" ]]; then
+		# A previous attempt may have removed the file but failed to restart.
+		advertised=$(active_admin_api) || return 1
+		if [[ -z "$advertised" ]]; then
+			printf "Deployment-admin host is already disabled.\n"
+			return 0
+		fi
+	fi
+	rm -f -- "$ADMIN_HOST_FILE" || { fail "Could not remove ${ADMIN_HOST_FILE}" || return 1; }
+	restart_relay || return 1
+	advertised=$(active_admin_api) || return 1
+	if [[ -n "$advertised" ]]; then
+		fail "The relay still advertises ${advertised}; check the relay log" || return 1
+	fi
+	printf "Deployment-admin host disabled. You can now remove the Cloudron alias.\n"
+	return 0
+}
+
+admin_status() {
+	local configured=""
+	local advertised=""
+
+	if [[ -L "$ADMIN_HOST_FILE" ]]; then
+		configured="(invalid: symlink)"
+	elif [[ -f "$ADMIN_HOST_FILE" ]]; then
+		configured=$(<"$ADMIN_HOST_FILE")
+	fi
+	advertised=$(active_admin_api) || return 1
+	printf "Configured admin host: %s\n" "${configured:-none}"
+	printf "Cloudron alias domains: %s\n" "${CLOUDRON_ALIAS_DOMAINS:-none}"
+	printf "Active admin_api: %s\n" "${advertised:-disabled}"
+	if [[ -n "$configured" && "$advertised" != "https://${configured}" ]]; then
+		printf "The configured host is not active. Re-add it as an alias, or run buzz-ctl admin-disable.\n"
+	fi
+	return 0
+}
+
+feedback_list() {
+	local option="$1"
+	local limit="$2"
+
+	if [[ -n "$option" ]]; then
+		[[ "$option" == --limit ]] || { fail "Usage: feedback-list [--limit 1-1000]" || return 1; }
+	else
+		limit=100
+	fi
+	if [[ ! "$limit" =~ ^[0-9]{1,4}$ ]] || ((10#$limit < 1 || 10#$limit > 1000)); then
+		fail "--limit must be an integer from 1 to 1000" || return 1
+	fi
+	load_admin_environment || return 1
+	/app/code/bin/buzz-admin product-feedback list --limit "$((10#$limit))" || return 1
+	return 0
+}
+
 usage() {
 	printf "%s\n" \
 		"Usage: buzz-ctl <command> [arguments]" \
@@ -242,6 +368,10 @@ usage() {
 		"  add-member <npub-or-hex> [member|admin] Add a relay member" \
 		"  remove-member <npub-or-hex> [role]      Remove a non-owner member" \
 		"  list-members                            List relay members" \
+		"  admin-enable <alias-domain>             Serve the deployment-admin dashboard on a Cloudron alias" \
+		"  admin-disable                           Turn the deployment-admin dashboard off" \
+		"  admin-status                            Show the configured and active admin host" \
+		"  feedback-list [--limit N]               List in-app product feedback (N: 1-1000, default 100)" \
 		"  status                                  Show process and dependency health" \
 		"  storage-status                          Show active store and migration counts" \
 		"  storage-purge-legacy [--confirm]        Delete migrated legacy Silo data (root)"
@@ -268,6 +398,13 @@ main() {
 		remove_member "$first_argument" "$second_argument" || return 1
 		;;
 	list-members) list_members || return 1 ;;
+	admin-enable)
+		[[ -n "$first_argument" ]] || { fail "admin-enable requires a Cloudron alias domain" || return 1; }
+		admin_enable "$first_argument" || return 1
+		;;
+	admin-disable) admin_disable || return 1 ;;
+	admin-status) admin_status || return 1 ;;
+	feedback-list) feedback_list "$first_argument" "$second_argument" || return 1 ;;
 	status) status || return 1 ;;
 	storage-status) storage_status || return 1 ;;
 	storage-purge-legacy) storage_purge_legacy "$first_argument" || return 1 ;;

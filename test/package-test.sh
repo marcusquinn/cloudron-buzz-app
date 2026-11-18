@@ -197,6 +197,28 @@ assert_buzz_image_contract() {
 	return 0
 }
 
+# GH#142: the deployment-admin API is public once enabled, so run-relay.sh is
+# the only place that may select it and must always pin NIP-98 authentication.
+assert_admin_surface_contract() {
+	local runtime_script=""
+
+	assert_contains run-relay.sh 'readonly ADMIN_AUTH_MODE="nip98"' || return 1
+	assert_contains run-relay.sh 'unset BUZZ_ADMIN_HOST BUZZ_ADMIN_AUTH BUZZ_ADMIN_TOKEN' || return 1
+	assert_precedes run-relay.sh 'unset BUZZ_ADMIN_HOST BUZZ_ADMIN_AUTH BUZZ_ADMIN_TOKEN' 'export BUZZ_ADMIN_HOST=' || return 1
+	[[ "$(grep -Fc 'BUZZ_ADMIN_AUTH=' "${ROOT_DIR}/run-relay.sh")" -eq 1 ]] || fail "run-relay.sh must assign BUZZ_ADMIN_AUTH exactly once" || return 1
+	assert_contains run-relay.sh "export BUZZ_ADMIN_AUTH=\"\$ADMIN_AUTH_MODE\"" || return 1
+	if grep -Eq 'BUZZ_ADMIN_AUTH=.?disabled|RELAY_OPERATOR_PUBKEYS=' "${ROOT_DIR}/run-relay.sh"; then
+		fail "run-relay.sh must not disable admin authentication or set operator pubkeys" || return 1
+	fi
+	for runtime_script in start.sh run-rustfs.sh storage-setup.sh run-pairing-relay.sh buzz-ctl supervisord.conf Dockerfile; do
+		if grep -Eq 'BUZZ_ADMIN_(HOST|AUTH|TOKEN)' "${ROOT_DIR}/${runtime_script}"; then
+			fail "${runtime_script} must not configure the deployment-admin surface" || return 1
+		fi
+	done
+	assert_contains buzz-ctl "is_alias_domain \"\$host\"" || return 1
+	return 0
+}
+
 main() {
 	local required_file=""
 	local shell_script=""
@@ -205,7 +227,7 @@ main() {
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.2.0\" and .upstreamVersion == \"1.0.4\" and .minBoxVersion == \"10.0.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and .packageUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.2.1\" and .upstreamVersion == \"1.0.5\" and .minBoxVersion == \"10.0.0\" and .multiDomain == true and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and .packageUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
@@ -215,8 +237,8 @@ main() {
 	jq --exit-status '[.versions[].manifest | select(has("packageUrl")) | (.minBoxVersion | split(".") | .[0] | tonumber) >= 10] | all' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
 		fail "Catalog entries with packageUrl must require Cloudron 10.0.0 or later" || return 1
 	}
-	assert_contains CHANGELOG '[0.2.0]' || return 1
-	assert_contains CHANGELOG.md '[0.2.0]' || return 1
+	assert_contains CHANGELOG '[0.2.1]' || return 1
+	assert_contains CHANGELOG.md '[0.2.1]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.4"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	assert_published_catalog_baseline || return 1
@@ -225,7 +247,8 @@ main() {
 	assert_contains CloudronManifest.json "hosted Builderlab workflow" || return 1
 	assert_contains README.md "blanket HTTP Basic Auth" || return 1
 	assert_contains README.md "https://github.com/block/buzz" || return 1
-	assert_contains README.md "intentionally leaves it disabled" || return 1
+	assert_contains README.md "package keeps it off until you opt in" || return 1
+	assert_contains README.md "deployment's operator, not to the Buzz team" || return 1
 	assert_contains README.md "https://aidevops.sh" || return 1
 	assert_contains README.md "https://github.com/marcusquinn/aidevops" || return 1
 	assert_contains README.md "## Buzz Desktop screenshots" || return 1
@@ -290,6 +313,7 @@ main() {
 	assert_contains nginx.conf 'proxy_request_buffering off;' || return 1
 	assert_contains supervisord.conf '[program:buzz-pairing-relay]' || return 1
 	assert_contains supervisord.conf '[program:nginx]' || return 1
+	assert_admin_surface_contract || return 1
 	pass "Production security defaults"
 	assert_contains Dockerfile 'ARG RUSTFS_SHA256=a834096dafa1f1a55825a2cdaf49d006a193978d344f2d508c2be475133738a3' || return 1
 	assert_contains Dockerfile 'sha256sum -c -' || return 1

@@ -73,9 +73,11 @@ packaging code.
 
 ## 7. Components
 
-The package owns no visual components. Operator administration is deliberately
-command-line based through `/app/code/buzz-ctl`. The public HTTP surface is the
-unmodified upstream invite and Git-forge bundle.
+The package owns no visual components. Operator administration is command-line
+based through `/app/code/buzz-ctl`. The public HTTP surface is the unmodified
+upstream invite and Git-forge bundle. The optional deployment-admin dashboard is
+the unmodified upstream admin bundle, served only on an opted-in Cloudron alias
+domain; the package adds no styling or chrome to it.
 
 ## 8. Guidance
 
