@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-18
+
+### Changed
+
+- Track Buzz desktop release `1.0.5`. The relay is unchanged: `1.0.5` pins the
+  same relay revision as `1.0.4`.
+
 ## [0.2.0] - 2026-11-17
 
 ### Changed

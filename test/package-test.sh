@@ -205,7 +205,7 @@ main() {
 		assert_file "$required_file" || return 1
 	done
 
-	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.2.0\" and .upstreamVersion == \"1.0.4\" and .minBoxVersion == \"10.0.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and .packageUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
+	jq --exit-status ".manifestVersion == 2 and .httpPort == 3000 and .healthCheckPath == \"/_readiness\" and .version == \"0.2.1\" and .upstreamVersion == \"1.0.5\" and .minBoxVersion == \"10.0.0\" and .iconUrl != \"\" and .packagerName != \"\" and .packagerUrl == \"https://github.com/marcusquinn\" and .packageUrl == \"https://github.com/marcusquinn/cloudron-buzz-app\" and (.mediaLinks | length) > 0 and .changelog == \"file://CHANGELOG\" and (.addons | has(\"localstorage\") and has(\"postgresql\") and has(\"redis\"))" "${ROOT_DIR}/CloudronManifest.json" >/dev/null || {
 		fail "CloudronManifest.json does not match the package contract" || return 1
 	}
 	pass "Cloudron manifest contract"
@@ -215,8 +215,8 @@ main() {
 	jq --exit-status '[.versions[].manifest | select(has("packageUrl")) | (.minBoxVersion | split(".") | .[0] | tonumber) >= 10] | all' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || {
 		fail "Catalog entries with packageUrl must require Cloudron 10.0.0 or later" || return 1
 	}
-	assert_contains CHANGELOG '[0.2.0]' || return 1
-	assert_contains CHANGELOG.md '[0.2.0]' || return 1
+	assert_contains CHANGELOG '[0.2.1]' || return 1
+	assert_contains CHANGELOG.md '[0.2.1]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --image=<DIGEST> --version=<VERSION> --state=published' || return 1
 	jq -e '.versions["0.1.4"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	assert_published_catalog_baseline || return 1

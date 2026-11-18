@@ -1,3 +1,6 @@
+[0.2.1]
+* Update the supported Buzz desktop release to 1.0.5. The relay is unchanged: 1.0.5 pins the same relay revision as 1.0.4.
+
 [0.2.0]
 * Support the Buzz 1.x desktop app: update the relay to an upstream main build that contains the relay revision Buzz 1.0.4 is built against.
 * The upstream version now follows Buzz desktop releases from block/buzz-app (1.0.4).
