@@ -266,7 +266,7 @@ active_admin_api() {
 }
 
 restart_relay() {
-	/usr/bin/supervisorctl --configuration "$SUPERVISOR_CONFIG" restart buzz-relay
+	/usr/bin/supervisorctl --configuration "$SUPERVISOR_CONFIG" restart buzz-relay || return 1
 	wait_for_relay || return 1
 	return 0
 }
@@ -302,12 +302,16 @@ admin_enable() {
 admin_disable() {
 	local advertised=""
 
-	if [[ ! -e "$ADMIN_HOST_FILE" && ! -L "$ADMIN_HOST_FILE" ]]; then
-		printf "Deployment-admin host is already disabled.\n"
-		return 0
-	fi
 	exec 8>/run/buzz/storage-migration.lock
 	flock -n 8 || { fail "Storage setup, legacy purge, owner or admin change is in progress" || return 1; }
+	if [[ ! -e "$ADMIN_HOST_FILE" && ! -L "$ADMIN_HOST_FILE" ]]; then
+		# A previous attempt may have removed the file but failed to restart.
+		advertised=$(active_admin_api) || return 1
+		if [[ -z "$advertised" ]]; then
+			printf "Deployment-admin host is already disabled.\n"
+			return 0
+		fi
+	fi
 	rm -f -- "$ADMIN_HOST_FILE" || { fail "Could not remove ${ADMIN_HOST_FILE}" || return 1; }
 	restart_relay || return 1
 	advertised=$(active_admin_api) || return 1
@@ -350,7 +354,7 @@ feedback_list() {
 		fail "--limit must be an integer from 1 to 1000" || return 1
 	fi
 	load_admin_environment || return 1
-	/app/code/bin/buzz-admin product-feedback list --limit "$((10#$limit))"
+	/app/code/bin/buzz-admin product-feedback list --limit "$((10#$limit))" || return 1
 	return 0
 }
 
