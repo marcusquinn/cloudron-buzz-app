@@ -1,3 +1,6 @@
+[0.2.2]
+* Update the supported Buzz desktop release to 1.0.6. The relay is unchanged: 1.0.6 pins the same relay revision as 1.0.5.
+
 [0.2.1]
 * Update the supported Buzz desktop release to 1.0.5. The relay is unchanged: 1.0.5 pins the same relay revision as 1.0.4.
 * Add an opt-in deployment-admin dashboard for moderation and in-app feedback. Add a Cloudron alias domain, then run buzz-ctl admin-enable with that alias. Every admin request requires a NIP-98 signature from the owner or a staffed operator.
