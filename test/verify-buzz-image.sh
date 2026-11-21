@@ -8,7 +8,7 @@ set -euo pipefail
 # from block/buzz main images. Each app release pins the block/buzz revision it
 # was built against (src-tauri/Cargo.toml, buzz-audio-client), so the packaged
 # relay must contain that revision. The NIP-CL relay commit remains a floor.
-readonly BUZZ_APP_RELEASE="v1.0.5"
+readonly BUZZ_APP_RELEASE="v1.0.6"
 readonly BUZZ_APP_RELAY_REVISION="630922a9e1f891380a61f5b7d726d05ca948cc64"
 readonly BUZZ_NIP_CL_REVISION="d28f6b2f7095b50a2c987a42e9b4ca345f8e9dac"
 readonly BUZZ_REVISION="c0ce4982fcbbc379255fde6762487d5808d8d2b4"
